@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEVID RP — Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0c12;--surface:#12151e;--card:#181d28;--border:#252a38;
+  --accent:#00c2ff;--accent2:#7c3aed;--green:#00e68a;--red:#ff3b5c;
+  --orange:#ff8c00;--text:#e8eaf0;--muted:#6b7280;--yellow:#f59e0b;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--border)}
+.sidebar-logo .brand{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar-logo .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(0,194,255,.07);color:var(--text)}
+.nav-item.active{background:rgba(0,194,255,.12);color:var(--accent)}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+.nav-sep{height:1px;background:var(--border);margin:8px 0}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border)}
+.admin-badge{background:rgba(0,194,255,.1);border:1px solid rgba(0,194,255,.2);border-radius:10px;padding:10px 14px;font-size:12px}
+.admin-badge .name{font-weight:700;color:var(--accent)}
+.logout-btn{display:block;margin-top:8px;padding:8px;background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.2);border-radius:8px;color:var(--red);font-size:12px;font-weight:600;text-align:center;text-decoration:none;transition:.2s}
+.logout-btn:hover{background:rgba(255,59,92,.2)}
+
+/* ── MAIN ── */
+.main{margin-left:240px;flex:1;padding:32px;min-height:100vh}
+.page{display:none;animation:fadeIn .3s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── HEADER ── */
+.page-header{margin-bottom:28px}
+.page-header h1{font-size:26px;font-weight:800}
+.page-header p{color:var(--muted);font-size:13px;margin-top:4px}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:.2s}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.blue::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.stat-card.purple::before{background:linear-gradient(90deg,var(--accent2),transparent)}
+.stat-card.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.stat-card.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.stat-card .label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-card .value{font-size:28px;font-weight:800;margin-top:6px}
+.stat-card .icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:32px;opacity:.15}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px}
+.card-title{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-title .dot{width:6px;height:6px;border-radius:50%}
+
+/* ── FORMS ── */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:13px;font-family:inherit;width:100%;outline:none;transition:.2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,194,255,.1)}
+select option{background:var(--surface)}
+textarea{resize:vertical;min-height:80px}
+
+/* ── BUTTONS ── */
+.btn{padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.2s;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0090cc);color:#000}
+.btn-primary:hover{opacity:.85;transform:translateY(-1px)}
+.btn-danger{background:linear-gradient(135deg,var(--red),#cc0028);color:#fff}
+.btn-danger:hover{opacity:.85;transform:translateY(-1px)}
+.btn-success{background:linear-gradient(135deg,var(--green),#00a862);color:#000}
+.btn-success:hover{opacity:.85;transform:translateY(-1px)}
+.btn-purple{background:linear-gradient(135deg,var(--accent2),#5b21b6);color:#fff}
+.btn-purple:hover{opacity:.85;transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:7px 14px;font-size:12px}
+.btn-full{width:100%;justify-content:center;margin-top:16px}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:6px;margin-bottom:20px;background:var(--bg);border-radius:12px;padding:5px;border:1px solid var(--border)}
+.tab{padding:9px 18px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--muted);transition:.2s}
+.tab.active{background:var(--card);color:var(--text);font-weight:700}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 14px;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid rgba(37,42,56,.5)}
+tr:hover td{background:rgba(255,255,255,.02)}
+tr:last-child td{border-bottom:none}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge-green{background:rgba(0,230,138,.15);color:var(--green);border:1px solid rgba(0,230,138,.25)}
+.badge-red{background:rgba(255,59,92,.15);color:var(--red);border:1px solid rgba(255,59,92,.25)}
+.badge-blue{background:rgba(0,194,255,.15);color:var(--accent);border:1px solid rgba(0,194,255,.25)}
+.badge-gray{background:rgba(107,114,128,.15);color:var(--muted);border:1px solid rgba(107,114,128,.25)}
+
+/* ── FACTION CARDS ── */
+.factions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.faction-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:.2s}
+.faction-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.08)}
+.faction-card .fbar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:0 3px 3px 0}
+.faction-card .fname{font-size:14px;font-weight:700;margin-bottom:6px}
+.faction-card .finfo{font-size:12px;color:var(--muted)}
+
+/* ── TOAST ── */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;font-size:13px;font-weight:500;max-width:320px;display:flex;align-items:center;gap:10px;animation:slideIn .3s ease;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+.toast.info{border-left:3px solid var(--accent)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── SPINNER ── */
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{width:100%;min-height:auto;position:relative;flex-direction:row;flex-wrap:wrap}
+  .main{margin-left:0}
+  .form-grid{grid-template-columns:1fr}
+}
+
+/* ── RESULT BOX ── */
+.result-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:14px;font-size:13px;font-family:'Courier New',monospace;color:var(--accent);min-height:44px;display:none}
+.result-box.visible{display:block}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+/* ── QUICK CMD ── */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:24px}
+.quick-btn{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.2s;font-size:12px;font-weight:600;color:var(--muted)}
+.quick-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,194,255,.05)}
+.quick-btn .qicon{font-size:24px;margin-bottom:6px;display:block}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">SEVID RP</div>
+    <div class="sub">Admin Panel v2.0</div>
+  </div>
+  <nav class="nav">
+    <button class="nav-item active" onclick="showPage('dashboard')"><span class="icon">🏠</span> Dashboard</button>
+    <button class="nav-item" onclick="showPage('player')"><span class="icon">👤</span> Jucători</button>
+    <button class="nav-item" onclick="showPage('economy')"><span class="icon">💰</span> Economie</button>
+    <button class="nav-item" onclick="showPage('vehicles')"><span class="icon">🚗</span> Vehicule</button>
+    <button class="nav-item" onclick="showPage('sanctions')"><span class="icon">🚫</span> Sanctiuni</button>
+    <button class="nav-item" onclick="showPage('factions')"><span class="icon">🏢</span> Factiuni</button>
+    <button class="nav-item" onclick="showPage('stock')"><span class="icon">📦</span> Stoc Masini</button>
+    <button class="nav-item" onclick="showPage('houses')"><span class="icon">🏠</span> Case</button>
+    <div class="nav-sep"></div>
+    <button class="nav-item" onclick="showPage('admin')"><span class="icon">⚙️</span> Admin Tools</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="admin-badge">
+      <div style="font-size:11px;color:var(--muted)">Conectat ca</div>
+      <div class="name">{{ admin_name }}</div>
+    </div>
+    <a href="/logout" class="logout-btn">⏻ Deconectare</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <h1>👑 Dashboard</h1>
+      <p>Bine ai venit, <strong>{{ admin_name }}</strong>! Panou de control SEVID RP.</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="label">Status Joc</div>
+        <div class="value" style="color:var(--accent);font-size:20px">ONLINE</div>
+        <span class="icon">🎮</span>
+      </div>
+      <div class="stat-card purple">
+        <div class="label">Comenzi trimise</div>
+        <div class="value" id="cmd-count">0</div>
+        <span class="icon">💬</span>
+      </div>
+      <div class="stat-card green">
+        <div class="label">Factiuni Active</div>
+        <div class="value">{{ factions|length }}</div>
+        <span class="icon">🏢</span>
+      </div>
+      <div class="stat-card red">
+        <div class="label">Conexiune Roblox</div>
+        <div class="value" style="font-size:16px" id="roblox-status">Messaging API</div>
+        <span class="icon">🔗</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--accent)"></div>Comenzi Rapide</div>
+      <div class="quick-grid">
+        <div class="quick-btn" onclick="showPage('player')"><span class="qicon">🔍</span>Caută Jucător</div>
+        <div class="quick-btn" onclick="showPage('economy')"><span class="qicon">💵</span>Dă Bani</div>
+        <div class="quick-btn" onclick="showPage('vehicles')"><span class="qicon">🚗</span>Dă Mașină</div>
+        <div class="quick-btn" onclick="showPage('sanctions')"><span class="qicon">🔨</span>Ban Jucător</div>
+        <div class="quick-btn" onclick="showPage('factions')"><span class="qicon">🏢</span>Set Facțiune</div>
+        <div class="quick-btn" onclick="showPage('admin')"><span class="qicon">👑</span>Set Admin</div>
+        <div class="quick-btn" onclick="showPage('stock')"><span class="qicon">📦</span>Update Stoc</div>
+        <div class="quick-btn" onclick="showPage('houses')"><span class="qicon">🏠</span>Case</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>Log Activitate</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Timp</th><th>Admin</th><th>Comandă</th><th>Target</th><th>Status</th></tr></thead>
+          <tbody id="activity-log">
+            <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Nicio activitate încă.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PLAYER ── -->
+  <div class="page" id="page-player">
+    <div class="page-header">
+      <h1>👤 Jucători</h1>
+      <p>Caută și verifică datele unui jucător online.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--accent)"></div>Verificare Jucător</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nume Jucător (Roblox)</label>
+          <input type="text" id="check-player" placeholder="Ex: sbyk">
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <button class="btn btn-primary" onclick="checkPlayer()">🔍 Verifică</button>
+        </div>
+      </div>
+      <div class="result-box" id="check-result"></div>
+    </div>
+  </div>
+
+  <!-- ── ECONOMY ── -->
+  <div class="page" id="page-economy">
+    <div class="page-header">
+      <h1>💰 Economie</h1>
+      <p>Oferă sau retrage resurse din joc.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('eco','give')">➕ Oferă</button>
+      <button class="tab" onclick="switchTab('eco','take')">➖ Retrage</button>
+    </div>
+
+    <div class="card" id="eco-give">
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>Oferă Resurse</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="give-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group">
+          <label>Tip</label>
+          <select id="give-type">
+            <option value="Cash">💵 Bani (Cash)</option>
+            <option value="Scrap">⚙️ Piese (Scrap)</option>
+            <option value="CourierXP">📦 XP Curier</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valoare</label>
+          <input type="number" id="give-value" placeholder="Ex: 10000" min="1">
+        </div>
+        <div class="form-group">
+          <label>Motiv</label>
+          <input type="text" id="give-reason" placeholder="Motivul oferirii">
+        </div>
+      </div>
+      <button class="btn btn-success btn-full" onclick="sendCmd('give')">✅ Oferă Resurse</button>
+    </div>
+
+    <div class="card" id="eco-take" style="display:none">
+      <div class="card-title"><div class="dot" style="background:var(--red)"></div>Retrage Resurse</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="take-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group">
+          <label>Tip</label>
+          <select id="take-type">
+            <option value="Cash">💵 Bani (Cash)</option>
+            <option value="Scrap">⚙️ Piese (Scrap)</option>
+            <option value="CourierXP">📦 XP Curier</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valoare (pozitivă, automat negativă)</label>
+          <input type="number" id="take-value" placeholder="Ex: 5000" min="1">
+        </div>
+        <div class="form-group">
+          <label>Motiv</label>
+          <input type="text" id="take-reason" placeholder="Motivul retragerii">
+        </div>
+      </div>
+      <button class="btn btn-danger btn-full" onclick="sendCmd('take')">🚫 Retrage Resurse</button>
+    </div>
+  </div>
+
+  <!-- ── VEHICLES ── -->
+  <div class="page" id="page-vehicles">
+    <div class="page-header">
+      <h1>🚗 Vehicule</h1>
+      <p>Adaugă sau confiscă vehicule.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('veh','add')">➕ Adaugă</button>
+      <button class="tab" onclick="switchTab('veh','remove')">➖ Confiscă</button>
+    </div>
+
+    <div class="card" id="veh-add">
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>Adaugă Vehicul</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="addcar-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group">
+          <label>Model Mașină (exact din joc)</label>
+          <input type="text" id="addcar-model" placeholder="Ex: DaciaPapuc, Logan">
+        </div>
+        <div class="form-group">
+          <label>Motiv</label>
+          <input type="text" id="addcar-reason" placeholder="Motiv">
+        </div>
+      </div>
+      <button class="btn btn-success btn-full" onclick="sendCmd('addcar')">🚗 Adaugă Vehicul</button>
+    </div>
+
+    <div class="card" id="veh-remove" style="display:none">
+      <div class="card-title"><div class="dot" style="background:var(--red)"></div>Confiscă Vehicul</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="rmcar-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group">
+          <label>Model Mașină</label>
+          <input type="text" id="rmcar-model" placeholder="Ex: DaciaPapuc">
+        </div>
+        <div class="form-group">
+          <label>Motiv</label>
+          <input type="text" id="rmcar-reason" placeholder="Motiv confiscare">
+        </div>
+      </div>
+      <button class="btn btn-danger btn-full" onclick="sendCmd('rmcar')">🔨 Confiscă Vehicul</button>
+    </div>
+  </div>
+
+  <!-- ── SANCTIONS ── -->
+  <div class="page" id="page-sanctions">
+    <div class="page-header">
+      <h1>🚫 Sanctiuni</h1>
+      <p>Banuri, unbanuri și sancțiuni.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('sanc','ban')">🔨 Ban</button>
+      <button class="tab" onclick="switchTab('sanc','unban')">✅ Unban</button>
+    </div>
+
+    <div class="card" id="sanc-ban">
+      <div class="card-title"><div class="dot" style="background:var(--red)"></div>Banează Jucător</div>
+      <div style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--red)">
+        ⚠️ Banul este <strong>permanent</strong> și se aplică atât online cât și offline.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="ban-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group">
+          <label>Motiv Ban (obligatoriu)</label>
+          <input type="text" id="ban-reason" placeholder="Ex: Cheat, Exploiting, Toxicitate">
+        </div>
+      </div>
+      <button class="btn btn-danger btn-full" onclick="sendCmd('ban')">🚫 Banează Permanent</button>
+    </div>
+
+    <div class="card" id="sanc-unban" style="display:none">
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>Debanează Jucător</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="unban-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group">
+          <label>Motiv Unban</label>
+          <input type="text" id="unban-reason" placeholder="Ex: Appeal acceptat">
+        </div>
+      </div>
+      <button class="btn btn-success btn-full" onclick="sendCmd('unban')">✅ Debanează</button>
+    </div>
+  </div>
+
+  <!-- ── FACTIONS ── -->
+  <div class="page" id="page-factions">
+    <div class="page-header">
+      <h1>🏢 Facțiuni</h1>
+      <p>Gestionează facțiunile și membrii.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--accent2)"></div>Setare Facțiune Jucător</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="setfac-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group">
+          <label>Facțiune</label>
+          <select id="setfac-faction">
+            {% for f in factions %}
+            <option value="{{ f.name }}">{{ f.name }}</option>
+            {% endfor %}
+            <option value="None">❌ Scoate din facțiune (None)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Rank (1-5)</label>
+          <select id="setfac-rank">
+            <option value="1">1 — Începător</option>
+            <option value="2">2 — Activ</option>
+            <option value="3">3 — Senior</option>
+            <option value="4">4 — Ofițer</option>
+            <option value="5">5 — Lider</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Motiv</label>
+          <input type="text" id="setfac-reason" placeholder="Motiv (opțional)">
+        </div>
+      </div>
+      <button class="btn btn-purple btn-full" onclick="sendCmd('setfac')">🏢 Setează Facțiunea</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--accent2)"></div>Lista Facțiuni</div>
+      <div class="factions-grid">
+        {% for f in factions %}
+        <div class="faction-card">
+          <div class="fbar" style="background:{{ f.color }}"></div>
+          <div style="padding-left:10px">
+            <div class="fname">{{ f.name }}</div>
+            <div class="finfo">Max {{ f.maxMembers }} membri</div>
+            <div style="margin-top:8px">
+              {% if f.appsOpen %}
+              <span class="badge badge-green">OPEN</span>
+              {% else %}
+              <span class="badge badge-gray">CLOSED</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STOCK ── -->
+  <div class="page" id="page-stock">
+    <div class="page-header">
+      <h1>📦 Stoc Mașini</h1>
+      <p>Actualizează stocul showroom-ului.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--orange)"></div>Modificare Stoc</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ID Mașină (exact din CarData)</label>
+          <input type="text" id="stock-carid" placeholder="Ex: DaciaPapuc, Logan1310">
+        </div>
+        <div class="form-group">
+          <label>Cantitate (pozitiv = adaugă, negativ = scade)</label>
+          <input type="number" id="stock-amount" placeholder="Ex: 5 sau -2">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="sendCmd('stock')">📦 Actualizează Stoc</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--orange)"></div>Verifică Tot Stocul</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Trimite comanda CheckStock în joc — răspunsul apare în canalul Discord webhook.</p>
+      <button class="btn btn-outline" onclick="sendCmd('checkstock')">🔍 Verifică Stoc (→ Discord)</button>
+    </div>
+  </div>
+
+  <!-- ── HOUSES ── -->
+  <div class="page" id="page-houses">
+    <div class="page-header">
+      <h1>🏠 Case</h1>
+      <p>Atribuie sau eliberează case în joc.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>Atribuire Casă</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ID Casă (număr)</label>
+          <input type="number" id="house-id" placeholder="Ex: 1, 2, 3...">
+        </div>
+        <div class="form-group">
+          <label>Noul Proprietar (sau AdmBot = eliberat)</label>
+          <input type="text" id="house-owner" placeholder="Nume Roblox / AdmBot">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="sendCmd('house')">🏠 Setează Proprietar</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>Verifică Toate Casele</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Răspunsul apare în canalul Discord webhook.</p>
+      <button class="btn btn-outline" onclick="sendCmd('checkhouses')">🔍 Verifică Case (→ Discord)</button>
+    </div>
+  </div>
+
+  <!-- ── ADMIN TOOLS ── -->
+  <div class="page" id="page-admin">
+    <div class="page-header">
+      <h1>⚙️ Admin Tools</h1>
+      <p>Setări de admin și rapoarte.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>Setare Nivel Admin</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="setadmin-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group">
+          <label>Nivel Admin</label>
+          <select id="setadmin-level">
+            <option value="0">0 — Niciun Admin</option>
+            <option value="1">1 — Helper</option>
+            <option value="2">2 — Moderator</option>
+            <option value="3">3 — Admin</option>
+            <option value="4">4 — Senior Admin</option>
+            <option value="5">5 — Management</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-purple btn-full" onclick="sendCmd('setadmin')">👑 Setează Admin</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--accent)"></div>Verifică Rapoarte Admin</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Jucător</label>
+          <input type="text" id="checkrep-player" placeholder="Nume Roblox">
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <button class="btn btn-outline" onclick="sendCmd('checkreports')">📊 Verifică (→ Discord)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script>
+let cmdCount = 0;
+const activityLog = [];
+
+// ── NAVIGARE ──────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    if (btn.getAttribute('onclick')?.includes("'" + name + "'")) btn.classList.add('active');
+  });
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────
+function switchTab(group, tab) {
+  const tabMap = {
+    'eco':  ['give','take'],
+    'veh':  ['add','remove'],
+    'sanc': ['ban','unban']
+  };
+  const idMap = {
+    'eco':  ['eco-give','eco-take'],
+    'veh':  ['veh-add','veh-remove'],
+    'sanc': ['sanc-ban','sanc-unban']
+  };
+  const tabs   = document.querySelectorAll(`#page-${group=='eco'?'economy':group=='veh'?'vehicles':'sanctions'} .tab`);
+  const panels = idMap[group];
+  tabs.forEach((t,i) => { t.classList.toggle('active', i === tabMap[group].indexOf(tab)); });
+  panels.forEach((id,i) => { document.getElementById(id).style.display = i === tabMap[group].indexOf(tab) ? 'block' : 'none'; });
+}
+
+// ── SEND COMMAND ──────────────────────────────────────────────────────────
+async function sendCmd(action) {
+  let type, target, value = '0', reason = 'Admin Panel';
+
+  if (action === 'give') {
+    target = document.getElementById('give-player').value.trim();
+    type   = document.getElementById('give-type').value;
+    value  = document.getElementById('give-value').value;
+    reason = document.getElementById('give-reason').value || 'Give din panel';
+    if (!target || !value) { toast('Completează toate câmpurile!', 'error'); return; }
+  } else if (action === 'take') {
+    target = document.getElementById('take-player').value.trim();
+    type   = document.getElementById('take-type').value;
+    value  = '-' + Math.abs(parseInt(document.getElementById('take-value').value));
+    reason = document.getElementById('take-reason').value || 'Take din panel';
+    if (!target || !value) { toast('Completează toate câmpurile!', 'error'); return; }
+  } else if (action === 'addcar') {
+    target = document.getElementById('addcar-player').value.trim();
+    type   = 'Car';
+    value  = document.getElementById('addcar-model').value.trim();
+    reason = document.getElementById('addcar-reason').value || 'Admin Gift';
+    if (!target || !value) { toast('Completează jucătorul și modelul!', 'error'); return; }
+  } else if (action === 'rmcar') {
+    target = document.getElementById('rmcar-player').value.trim();
+    type   = 'RemoveCar';
+    value  = document.getElementById('rmcar-model').value.trim();
+    reason = document.getElementById('rmcar-reason').value || 'Confiscare';
+    if (!target || !value) { toast('Completează jucătorul și modelul!', 'error'); return; }
+  } else if (action === 'ban') {
+    target = document.getElementById('ban-player').value.trim();
+    type   = 'Ban';
+    reason = document.getElementById('ban-reason').value.trim();
+    if (!target || !reason) { toast('Jucătorul și motivul sunt obligatorii!', 'error'); return; }
+  } else if (action === 'unban') {
+    target = document.getElementById('unban-player').value.trim();
+    type   = 'Unban';
+    reason = document.getElementById('unban-reason').value || 'Appeal acceptat';
+    if (!target) { toast('Introdu numele jucătorului!', 'error'); return; }
+  } else if (action === 'setfac') {
+    target = document.getElementById('setfac-player').value.trim();
+    type   = 'SetFaction';
+    value  = document.getElementById('setfac-faction').value;
+    reason = document.getElementById('setfac-rank').value;
+    if (!target) { toast('Introdu numele jucătorului!', 'error'); return; }
+  } else if (action === 'stock') {
+    target = document.getElementById('stock-carid').value.trim();
+    type   = 'Stock';
+    value  = document.getElementById('stock-amount').value;
+    reason = 'Admin Panel Stock';
+    if (!target || !value) { toast('Completează ID-ul și cantitatea!', 'error'); return; }
+  } else if (action === 'checkstock') {
+    target = '-'; type = 'CheckStock'; value = '0';
+  } else if (action === 'house') {
+    const houseId = document.getElementById('house-id').value.trim();
+    target = houseId;
+    type   = 'House';
+    value  = document.getElementById('house-owner').value.trim();
+    reason = 'Admin Panel';
+    if (!houseId || !value) { toast('Completează ID-ul casei și proprietarul!', 'error'); return; }
+  } else if (action === 'checkhouses') {
+    target = '-'; type = 'CheckHouses'; value = '0';
+  } else if (action === 'setadmin') {
+    target = document.getElementById('setadmin-player').value.trim();
+    type   = 'SetAdmin';
+    value  = document.getElementById('setadmin-level').value;
+    if (!target) { toast('Introdu numele jucătorului!', 'error'); return; }
+  } else if (action === 'checkreports') {
+    target = document.getElementById('checkrep-player').value.trim();
+    type   = 'CheckReports';
+    if (!target) { toast('Introdu numele jucătorului!', 'error'); return; }
+  }
+
+  try {
+    const res  = await fetch('/api/command', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ type, target, value, reason })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`✅ Comandă trimisă: ${type} → ${target}`, 'success');
+      cmdCount++;
+      document.getElementById('cmd-count').textContent = cmdCount;
+      addActivity(type, target, 'SUCCESS');
+    } else {
+      toast(`❌ Eroare: ${data.message}`, 'error');
+      addActivity(type, target, 'ERROR');
+    }
+  } catch(e) {
+    toast('❌ Eroare de rețea!', 'error');
+  }
+}
+
+// ── CHECK PLAYER ──────────────────────────────────────────────────────────
+async function checkPlayer() {
+  const name = document.getElementById('check-player').value.trim();
+  if (!name) { toast('Introdu un nume!', 'error'); return; }
+  const box = document.getElementById('check-result');
+  box.className = 'result-box visible';
+  box.textContent = '⏳ Se verifică...';
+  try {
+    const res  = await fetch('/api/command', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ type: 'Check', target: name, value: '0', reason: 'Check' })
+    });
+    const data = await res.json();
+    box.textContent = data.ok ? `✅ Comandă trimisă. Răspunsul apare în Discord webhook.\n(Jucătorul trebuie să fie online pentru date live)` : `❌ ${data.message}`;
+    addActivity('Check', name, data.ok ? 'SUCCESS' : 'ERROR');
+  } catch(e) {
+    box.textContent = '❌ Eroare de rețea!';
+  }
+}
+
+// ── ACTIVITY LOG ──────────────────────────────────────────────────────────
+function addActivity(cmd, target, status) {
+  const tbody = document.getElementById('activity-log');
+  const now = new Date().toLocaleTimeString('ro-RO');
+  const badge = status === 'SUCCESS'
+    ? '<span class="badge badge-green">OK</span>'
+    : '<span class="badge badge-red">ERR</span>';
+  const adminName = '{{ admin_name }}';
+  const row = `<tr>
+    <td style="color:var(--muted)">${now}</td>
+    <td>${adminName}</td>
+    <td><span class="badge badge-blue">${cmd}</span></td>
+    <td>${target}</td>
+    <td>${badge}</td>
+  </tr>`;
+  if (tbody.innerHTML.includes('Nicio activitate')) tbody.innerHTML = '';
+  tbody.insertAdjacentHTML('afterbegin', row);
+  if (tbody.children.length > 20) tbody.lastElementChild.remove();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+  el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(20px)'; el.style.transition='.3s'; setTimeout(()=>el.remove(),300); }, 3500);
+}
+</script>
+</body>
+</html>
