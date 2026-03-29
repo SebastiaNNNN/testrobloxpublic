@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import quote
@@ -32,6 +33,104 @@ SHOP_ITEMS = {
     "rp_25": {"name": "25 RP Points", "cost": 14, "kind": "rp", "amount": 25},
     "garage_1": {"name": "+1 Slot Garaj", "cost": 28, "kind": "garage", "amount": 1},
 }
+
+DEFAULT_GAME_FACTIONS = [
+    {"name": "Politie Romana", "level_req": 1, "max_members": 50, "apps_open": True},
+    {"name": "Politia Locala", "level_req": 10, "max_members": 30, "apps_open": False},
+    {"name": "Jandarmeria", "level_req": 20, "max_members": 40, "apps_open": False},
+    {"name": "SMURD / Medici", "level_req": 7, "max_members": 30, "apps_open": False},
+    {"name": "School Instructors", "level_req": 12, "max_members": 20, "apps_open": False},
+    {"name": "Mafia Sandwich", "level_req": 5, "max_members": 25, "apps_open": False},
+    {"name": "Clanul Sportivilor", "level_req": 10, "max_members": 30, "apps_open": False},
+    {"name": "Hitman Agency", "level_req": 25, "max_members": 15, "apps_open": False},
+]
+
+_FACTION_CONFIG_CACHE = {"ts": 0, "data": []}
+
+
+def _extract_block(text: str, opening_brace_index: int):
+    if opening_brace_index < 0 or opening_brace_index >= len(text) or text[opening_brace_index] != "{":
+        return "", -1
+    depth = 0
+    idx = opening_brace_index
+    while idx < len(text):
+        char = text[idx]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[opening_brace_index + 1 : idx], idx
+        idx += 1
+    return "", -1
+
+
+def _parse_game_factions():
+    now = int(time.time())
+    if _FACTION_CONFIG_CACHE["data"] and now - _FACTION_CONFIG_CACHE["ts"] < 30:
+        return _FACTION_CONFIG_CACHE["data"]
+
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    cfg_path = os.path.join(
+        base_dir,
+        "scripts",
+        "ReplicatedStorage",
+        "SharedConfigs",
+        "FactionConfig.luau",
+    )
+
+    try:
+        with open(cfg_path, "r", encoding="utf-8", errors="ignore") as fp:
+            text = fp.read()
+    except Exception:
+        return list(DEFAULT_GAME_FACTIONS)
+
+    table_match = re.search(r"FactionConfig\.Factions\s*=\s*\{", text)
+    if not table_match:
+        return list(DEFAULT_GAME_FACTIONS)
+
+    table_open = text.find("{", table_match.start())
+    table_content, table_end = _extract_block(text, table_open)
+    if table_end < 0:
+        return list(DEFAULT_GAME_FACTIONS)
+
+    rows = []
+    cursor = 0
+    while cursor < len(table_content):
+        entry_match = re.search(r'\["([^"]+)"\]\s*=\s*\{', table_content[cursor:])
+        if not entry_match:
+            break
+
+        faction_name = entry_match.group(1).strip()
+        entry_global_start = cursor + entry_match.start()
+        block_open = cursor + entry_match.end() - 1
+        block_content, block_end = _extract_block(table_content, block_open)
+        if block_end < 0:
+            break
+
+        level_match = re.search(r"LevelReq\s*=\s*(\d+)", block_content)
+        max_match = re.search(r"MaxMembers\s*=\s*(\d+)", block_content)
+        apps_match = re.search(r"AppsOpen\s*=\s*(true|false)", block_content, flags=re.IGNORECASE)
+
+        rows.append(
+            {
+                "name": faction_name,
+                "level_req": int(level_match.group(1)) if level_match else 1,
+                "max_members": int(max_match.group(1)) if max_match else 0,
+                "apps_open": bool(apps_match and apps_match.group(1).lower() == "true"),
+            }
+        )
+
+        cursor = block_end + 1
+        if cursor <= entry_global_start:
+            break
+
+    if not rows:
+        rows = list(DEFAULT_GAME_FACTIONS)
+
+    _FACTION_CONFIG_CACHE["ts"] = now
+    _FACTION_CONFIG_CACHE["data"] = rows
+    return rows
 
 
 def _now_ms() -> int:
@@ -143,6 +242,10 @@ def _is_leader(users: dict, username: str, faction: str):
 
 
 def _available_factions(users: dict):
+    cfg = _parse_game_factions()
+    if cfg:
+        return [row["name"] for row in cfg]
+
     found = set()
     for _, data in users.items():
         faction = str(_as_dict(data).get("factiune", "Civil")).strip()
@@ -156,6 +259,10 @@ def _handle_list_hub(identity: dict, users: dict):
     profile = _as_dict(users.get(username))
     if not profile:
         return {"ok": False, "msg": "Profilul tau Roblox nu exista in users."}
+
+    game_factions = _parse_game_factions()
+    available = [row["name"] for row in game_factions] if game_factions else _available_factions(users)
+    open_factions = [row["name"] for row in game_factions if row.get("apps_open")] if game_factions else []
 
     all_apps = _flatten_apps(firebase_get("panel/faction_applications")[1])
     my_apps = [app for app in all_apps if str(app.get("applicant", "")) == username][:40]
@@ -202,7 +309,9 @@ def _handle_list_hub(identity: dict, users: dict):
         "my_faction": my_faction,
         "is_leader": is_leader,
         "my_pp": parse_int(profile.get("premium_points", 0), 0),
-        "available_factions": _available_factions(users),
+        "available_factions": available,
+        "open_factions": open_factions,
+        "game_factions": game_factions,
         "my_applications": my_apps,
         "leader_pending_apps": leader_pending,
         "leader_members": leader_members,
@@ -217,8 +326,15 @@ def _handle_submit_application(identity: dict, users: dict, body: dict):
     if not faction:
         return {"ok": False, "msg": "Faction este obligatorie."}
 
-    if faction not in _available_factions(users):
+    game_factions = _parse_game_factions()
+    available = [row["name"] for row in game_factions] if game_factions else _available_factions(users)
+    if faction not in available:
         return {"ok": False, "msg": "Factiunea selectata nu exista."}
+
+    if game_factions:
+        by_name = {row["name"]: row for row in game_factions}
+        if faction in by_name and not by_name[faction].get("apps_open", False):
+            return {"ok": False, "msg": "Aplicatiile sunt inchise la aceasta factiune."}
 
     all_apps = _flatten_apps(firebase_get("panel/faction_applications")[1])
     for app in all_apps:

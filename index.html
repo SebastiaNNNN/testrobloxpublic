@@ -855,17 +855,46 @@
     function loadFactions() {
         const counts = {};
         Object.entries(allUsers).forEach(([, d]) => {
-            const f = d.factiune || 'Civil';
-            if (f === 'Civil') return; // Excludem civilii
-            counts[f] = (counts[f]||0) + 1;
+            const f = d.factiune || "Civil";
+            if (f === "Civil") return;
+            counts[f] = (counts[f] || 0) + 1;
         });
-        const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
-        const container = document.getElementById('faction-overview');
+
+        const container = document.getElementById("faction-overview");
+        const configRows = hubSnapshot?.game_factions || [];
+
+        if (configRows.length) {
+            container.innerHTML = configRows.map((row) => {
+                const name = row.name;
+                const cnt = Number(counts[name] || 0);
+                const levelReq = Number(row.level_req || 1);
+                const maxMembers = Number(row.max_members || 0);
+                const appsOpen = !!row.apps_open;
+                const maxText = maxMembers > 0 ? ` / ${maxMembers}` : "";
+                const appsBadge = appsOpen
+                    ? `<span class="badge badge-green">OPEN</span>`
+                    : `<span class="badge badge-red">CLOSED</span>`;
+
+                return `
+                    <div class="faction-card-item" onclick="showFactionMembers('${name.replace(/'/g, "\\'")}')">
+                        <div class="fname">${safeHtml(name)}</div>
+                        <div class="fcount"><span>${cnt}${maxText}</span> membri</div>
+                        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                            ${appsBadge}
+                            <span class="badge badge-blue">Lv ${levelReq}+</span>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+            return;
+        }
+
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
         container.innerHTML = sorted.length ? sorted.map(([name, cnt]) => `
-            <div class="faction-card-item" onclick="showFactionMembers('${name.replace(/'/g,"\\'")}')">
+            <div class="faction-card-item" onclick="showFactionMembers('${name.replace(/'/g, "\\'")}')">
                 <div class="fname">${name}</div>
                 <div class="fcount"><span>${cnt}</span> membri</div>
-            </div>`).join('') : '<div class="empty-msg">Nu există facțiuni active.</div>';
+            </div>`).join("") : "<div class='empty-msg'>Nu exista factiuni active.</div>";
     }
 
     window.showFactionMembers = function(faction) {
@@ -1011,15 +1040,29 @@
         `).join("");
     }
 
-    function renderApplyFactionOptions(factions) {
+    function renderApplyFactionOptions(openFactions, gameFactions) {
         const select = document.getElementById("apply-faction");
         if (!select) return;
         const current = select.value;
-        const options = factions?.length
-            ? factions.map((faction) => `<option value="${safeHtml(faction)}">${safeHtml(faction)}</option>`).join("")
-            : "";
-        select.innerHTML = `<option value="">Alege factiunea</option>${options}`;
-        if (current && factions?.includes(current)) {
+
+        if (Array.isArray(gameFactions) && gameFactions.length) {
+            const openSet = new Set(openFactions || []);
+            const options = gameFactions.map((row) => {
+                const isOpen = openSet.has(row.name);
+                const suffix = isOpen ? "" : " (Inchise)";
+                const levelReq = Number(row.level_req || 1);
+                return `<option value="${safeHtml(row.name)}" ${isOpen ? "" : "disabled"}>${safeHtml(row.name)} - Lv ${levelReq}${suffix}</option>`;
+            }).join("");
+            select.innerHTML = `<option value="">Alege factiunea</option>${options}`;
+        } else {
+            const options = openFactions?.length
+                ? openFactions.map((faction) => `<option value="${safeHtml(faction)}">${safeHtml(faction)}</option>`).join("")
+                : "";
+            select.innerHTML = `<option value="">Alege factiunea</option>${options}`;
+        }
+
+        const allowed = (openFactions || []);
+        if (current && allowed.includes(current)) {
             select.value = current;
         }
     }
@@ -1033,8 +1076,9 @@
         }
 
         hubSnapshot = data;
+        loadFactions();
         renderMyApplications(data.my_applications || []);
-        renderApplyFactionOptions(data.available_factions || []);
+        renderApplyFactionOptions(data.open_factions || data.available_factions || [], data.game_factions || []);
 
         const leaderTools = document.getElementById("leader-tools");
         if (data.is_leader) {
@@ -1261,3 +1305,4 @@
 </script>
 </body>
 </html>
+
