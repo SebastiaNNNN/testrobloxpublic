@@ -48,6 +48,23 @@ DEFAULT_GAME_FACTIONS = [
 _FACTION_CONFIG_CACHE = {"ts": 0, "data": []}
 
 
+def _normalize_status(value: str) -> str:
+    raw = str(value or "").strip().lower()
+    if raw in ("pending", "in_review"):
+        return "pending"
+    if raw in ("accepted", "invite", "invited"):
+        return "invited"
+    if raw in ("rejected", "reject"):
+        return "rejected"
+    if raw in ("declined", "archived_declined"):
+        return "archived_declined"
+    if raw in ("archived", "archive", "archived_rejected"):
+        return "archived_rejected"
+    if raw in ("joined",):
+        return "joined"
+    return raw or "pending"
+
+
 def _extract_block(text: str, opening_brace_index: int):
     if opening_brace_index < 0 or opening_brace_index >= len(text) or text[opening_brace_index] != "{":
         return "", -1
@@ -254,18 +271,54 @@ def _available_factions(users: dict):
     return sorted(found)
 
 
+def _load_faction_runtime_state(game_factions: list[dict]):
+    ok, raw, _ = firebase_get("panel/faction_state")
+    state = _as_dict(raw) if ok else {}
+    stored_open = _as_dict(state.get("apps_open"))
+    stored_sessions = _as_dict(state.get("sessions"))
+
+    apps_open = {}
+    sessions = {}
+    for row in game_factions:
+        name = row["name"]
+        apps_open[name] = bool(stored_open[name]) if name in stored_open else bool(row.get("apps_open", False))
+        sessions[name] = parse_int(stored_sessions.get(name, 0), 0)
+
+    return apps_open, sessions
+
+
+def _save_faction_runtime_state(apps_open: dict, sessions: dict):
+    payload = {"apps_open": apps_open, "sessions": sessions}
+    return firebase_write("panel/faction_state", payload, "PUT")
+
+
 def _handle_list_hub(identity: dict, users: dict):
     username = identity["username"]
     profile = _as_dict(users.get(username))
     if not profile:
         return {"ok": False, "msg": "Profilul tau Roblox nu exista in users."}
 
-    game_factions = _parse_game_factions()
+    game_factions_base = _parse_game_factions()
+    apps_open_map, session_map = _load_faction_runtime_state(game_factions_base)
+    game_factions = []
+    for row in game_factions_base:
+        item = dict(row)
+        item["apps_open"] = bool(apps_open_map.get(row["name"], row.get("apps_open", False)))
+        item["session_id"] = parse_int(session_map.get(row["name"], 0), 0)
+        game_factions.append(item)
+
     available = [row["name"] for row in game_factions] if game_factions else _available_factions(users)
     open_factions = [row["name"] for row in game_factions if row.get("apps_open")] if game_factions else []
 
     all_apps = _flatten_apps(firebase_get("panel/faction_applications")[1])
-    my_apps = [app for app in all_apps if str(app.get("applicant", "")) == username][:40]
+    my_apps = []
+    for app in all_apps:
+        if str(app.get("applicant", "")) != username:
+            continue
+        row = dict(app)
+        row["status"] = _normalize_status(row.get("status", "pending"))
+        my_apps.append(row)
+    my_apps = my_apps[:60]
 
     my_faction = str(profile.get("factiune", "Civil")) or "Civil"
     is_leader = _is_leader(users, username, my_faction)
@@ -276,7 +329,8 @@ def _handle_list_hub(identity: dict, users: dict):
         leader_pending = [
             app
             for app in all_apps
-            if str(app.get("status", "pending")) == "pending" and str(app.get("faction", "")) == my_faction
+            if _normalize_status(app.get("status", "pending")) == "pending"
+            and str(app.get("faction", "")) == my_faction
         ][:100]
 
         for member_name, member_data in users.items():
@@ -302,11 +356,18 @@ def _handle_list_hub(identity: dict, users: dict):
             continue
         history.append(row)
     history.sort(key=lambda row: row.get("ts", 0), reverse=True)
+    my_notifications = 0
+    for app in my_apps:
+        st = _normalize_status(app.get("status", "pending"))
+        if st in ("invited", "rejected"):
+            my_notifications += 1
 
     return {
         "ok": True,
         "me": username,
         "my_faction": my_faction,
+        "my_faction_apps_open": bool(apps_open_map.get(my_faction, False)),
+        "my_notifications": my_notifications,
         "is_leader": is_leader,
         "my_pp": parse_int(profile.get("premium_points", 0), 0),
         "available_factions": available,
@@ -326,30 +387,51 @@ def _handle_submit_application(identity: dict, users: dict, body: dict):
     if not faction:
         return {"ok": False, "msg": "Faction este obligatorie."}
 
+    profile = _as_dict(users.get(username))
+    if not profile:
+        return {"ok": False, "msg": "Profilul tau Roblox nu exista in users."}
+    if str(profile.get("factiune", "Civil")) != "Civil":
+        return {"ok": False, "msg": "Esti deja intr-o factiune."}
+
     game_factions = _parse_game_factions()
-    available = [row["name"] for row in game_factions] if game_factions else _available_factions(users)
-    if faction not in available:
+    by_name = {row["name"]: row for row in game_factions}
+    if faction not in by_name:
         return {"ok": False, "msg": "Factiunea selectata nu exista."}
 
-    if game_factions:
-        by_name = {row["name"]: row for row in game_factions}
-        if faction in by_name and not by_name[faction].get("apps_open", False):
-            return {"ok": False, "msg": "Aplicatiile sunt inchise la aceasta factiune."}
+    apps_open_map, sessions_map = _load_faction_runtime_state(game_factions)
+    if not bool(apps_open_map.get(faction, by_name[faction].get("apps_open", False))):
+        return {"ok": False, "msg": "Aplicatiile sunt inchise la aceasta factiune."}
+
+    my_level = parse_int(profile.get("level", 1), 1)
+    required_level = parse_int(by_name[faction].get("level_req", 1), 1)
+    if my_level < required_level:
+        return {
+            "ok": False,
+            "msg": f"Nivel prea mic. Ai Level {my_level}, minim {required_level}.",
+        }
+
+    current_session = parse_int(sessions_map.get(faction, 0), 0)
 
     all_apps = _flatten_apps(firebase_get("panel/faction_applications")[1])
     for app in all_apps:
-        if (
-            str(app.get("applicant", "")) == username
-            and str(app.get("faction", "")) == faction
-            and str(app.get("status", "pending")) == "pending"
-        ):
-            return {"ok": False, "msg": "Ai deja aplicatie pending la aceasta factiune."}
+        if str(app.get("applicant", "")) != username or str(app.get("faction", "")) != faction:
+            continue
+
+        status = _normalize_status(app.get("status", "pending"))
+        if status in ("pending", "invited"):
+            return {"ok": False, "msg": "Ai deja o aplicatie activa la aceasta factiune."}
+
+        app_session = parse_int(app.get("session_id", 0), 0)
+        if status in ("rejected", "archived_rejected", "archived_declined") and app_session == current_session:
+            return {"ok": False, "msg": "Ai fost deja respins in sesiunea curenta. Asteapta redeschiderea aplicatiilor."}
 
     payload = {
         "applicant": username,
         "faction": faction,
         "message": message[:600],
         "status": "pending",
+        "session_id": current_session,
+        "feedback": "",
         "created_at": _now_ms(),
     }
 
@@ -369,6 +451,7 @@ def _handle_review_application(identity: dict, users: dict, body: dict):
 
     app_id = str(body.get("appId", "")).strip()
     decision = str(body.get("decision", "")).strip().lower()
+    reason = str(body.get("reason", "")).strip()[:300]
     if not app_id or decision not in ("accept", "reject"):
         return {"ok": False, "msg": "appId/decision invalid."}
 
@@ -382,31 +465,28 @@ def _handle_review_application(identity: dict, users: dict, body: dict):
     app_faction = str(app.get("faction", "")).strip()
     if app_faction != my_faction:
         return {"ok": False, "msg": "Nu poti procesa aplicatii din alta factiune."}
-    if str(app.get("status", "pending")) != "pending":
+    if _normalize_status(app.get("status", "pending")) != "pending":
         return {"ok": False, "msg": "Aplicatia nu mai este pending."}
 
     applicant = str(app.get("applicant", "")).strip()
     if not applicant:
         return {"ok": False, "msg": "Aplicatie invalida: applicant lipsa."}
 
-    sync_note = ""
-    if decision == "accept":
-        ok_user, _, err_user = _firebase_patch(
-            f"users/{_safe_path(applicant)}",
-            {"factiune": my_faction, "rank": 1, "faction_joined_at": _now_ms()},
-        )
-        if not ok_user:
-            return {"ok": False, "msg": err_user}
-        synced, note = _send_roblox_command(username, "SetFaction", applicant, my_faction, "1")
-        if note:
-            sync_note = note
-        if not synced:
-            sync_note = note
+    if decision == "reject" and len(reason) < 3:
+        return {"ok": False, "msg": "Motivul de respingere trebuie sa aiba minim 3 caractere."}
+
+    next_status = "invited" if decision == "accept" else "rejected"
+    feedback = (
+        "Felicitari! Ai fost acceptat. Verifica notificarile si confirma intrarea."
+        if decision == "accept"
+        else reason
+    )
 
     ok_app, _, err_app = _firebase_patch(
         f"panel/faction_applications/{_safe_path(app_id)}",
         {
-            "status": "accepted" if decision == "accept" else "rejected",
+            "status": next_status,
+            "feedback": feedback,
             "reviewed_by": username,
             "reviewed_at": _now_ms(),
         },
@@ -420,11 +500,124 @@ def _handle_review_application(identity: dict, users: dict, body: dict):
             "faction": my_faction,
             "actor": username,
             "target": applicant,
-            "event": f"application_{decision}",
+            "event": "application_invited" if decision == "accept" else "application_rejected",
             "ts": _now_ms(),
         },
     )
-    return {"ok": True, "msg": f"Aplicatia a fost {decision}ata.", "sync_note": sync_note}
+    if decision == "accept":
+        return {"ok": True, "msg": f"{applicant} a fost acceptat si a primit invite in {my_faction}."}
+    return {"ok": True, "msg": f"Aplicatia lui {applicant} a fost respinsa."}
+
+
+def _handle_respond_invite(identity: dict, users: dict, body: dict):
+    username = identity["username"]
+    app_id = str(body.get("appId", "")).strip()
+    decision = str(body.get("decision", "")).strip().lower()
+    if not app_id or decision not in ("accept", "decline", "archive"):
+        return {"ok": False, "msg": "appId/decision invalid."}
+
+    ok, app_raw, err = firebase_get(f"panel/faction_applications/{_safe_path(app_id)}")
+    if not ok:
+        return {"ok": False, "msg": err}
+    app = _as_dict(app_raw)
+    if not app:
+        return {"ok": False, "msg": "Aplicatia nu exista."}
+
+    applicant = str(app.get("applicant", "")).strip()
+    if applicant != username:
+        return {"ok": False, "msg": "Nu poti modifica aplicatia altui jucator."}
+
+    status = _normalize_status(app.get("status", "pending"))
+    faction = str(app.get("faction", "")).strip()
+    if not faction:
+        return {"ok": False, "msg": "Aplicatie invalida: factiune lipsa."}
+
+    profile = _as_dict(users.get(username))
+    if not profile:
+        return {"ok": False, "msg": "Profil user lipsa."}
+
+    if decision == "accept":
+        if status != "invited":
+            return {"ok": False, "msg": "Aplicatia nu este in status invite."}
+        if str(profile.get("factiune", "Civil")) != "Civil":
+            return {"ok": False, "msg": "Esti deja intr-o factiune."}
+
+        ok_user, _, err_user = _firebase_patch(
+            f"users/{_safe_path(username)}",
+            {"factiune": faction, "rank": 1, "faction_joined_at": _now_ms()},
+        )
+        if not ok_user:
+            return {"ok": False, "msg": err_user}
+
+        _, sync_note = _send_roblox_command(username, "SetFaction", username, faction, "1")
+
+        ok_app, _, err_app = _firebase_patch(
+            f"panel/faction_applications/{_safe_path(app_id)}",
+            {"status": "joined", "responded_at": _now_ms()},
+        )
+        if not ok_app:
+            return {"ok": False, "msg": err_app}
+
+        firebase_post(
+            "panel/faction_logs",
+            {
+                "faction": faction,
+                "actor": username,
+                "target": username,
+                "event": "invite_accepted",
+                "ts": _now_ms(),
+            },
+        )
+        return {"ok": True, "msg": f"Ai intrat in {faction}.", "sync_note": sync_note}
+
+    if decision == "decline":
+        if status != "invited":
+            return {"ok": False, "msg": "Aplicatia nu este in status invite."}
+        ok_app, _, err_app = _firebase_patch(
+            f"panel/faction_applications/{_safe_path(app_id)}",
+            {"status": "archived_declined", "responded_at": _now_ms()},
+        )
+        if not ok_app:
+            return {"ok": False, "msg": err_app}
+        return {"ok": True, "msg": "Ai refuzat invitatia."}
+
+    if status != "rejected":
+        return {"ok": False, "msg": "Doar aplicatiile respinse pot fi arhivate."}
+
+    ok_app, _, err_app = _firebase_patch(
+        f"panel/faction_applications/{_safe_path(app_id)}",
+        {"status": "archived_rejected", "responded_at": _now_ms()},
+    )
+    if not ok_app:
+        return {"ok": False, "msg": err_app}
+    return {"ok": True, "msg": "Aplicatia respinsa a fost mutata in istoric."}
+
+
+def _handle_toggle_apps(identity: dict, users: dict):
+    username = identity["username"]
+    me = _as_dict(users.get(username))
+    my_faction = str(me.get("factiune", "Civil")) or "Civil"
+    if not _is_leader(users, username, my_faction):
+        return {"ok": False, "msg": "Nu ai drepturi de leader."}
+
+    game_factions = _parse_game_factions()
+    by_name = {row["name"]: row for row in game_factions}
+    if my_faction not in by_name:
+        return {"ok": False, "msg": "Factiunea ta nu exista in configuratia jocului."}
+
+    apps_open, sessions = _load_faction_runtime_state(game_factions)
+    current = bool(apps_open.get(my_faction, by_name[my_faction].get("apps_open", False)))
+    next_state = not current
+    apps_open[my_faction] = next_state
+    if next_state:
+        sessions[my_faction] = int(time.time())
+
+    ok_save, _, save_err = _save_faction_runtime_state(apps_open, sessions)
+    if not ok_save:
+        return {"ok": False, "msg": save_err}
+
+    state_text = "DESCHISE" if next_state else "INCHISE"
+    return {"ok": True, "apps_open": next_state, "msg": f"Aplicatiile pentru {my_faction} sunt acum {state_text}."}
 
 
 def _handle_add_leader(identity: dict, users: dict, body: dict):
@@ -593,6 +786,11 @@ class handler(BaseHTTPRequestHandler):
             send_json(self, 200 if payload.get("ok") else 400, payload)
             return
 
+        if action == "respond_invite":
+            payload = _handle_respond_invite(identity, users, body)
+            send_json(self, 200 if payload.get("ok") else 400, payload)
+            return
+
         if action == "add_leader":
             payload = _handle_add_leader(identity, users, body)
             send_json(self, 200 if payload.get("ok") else 400, payload)
@@ -605,6 +803,11 @@ class handler(BaseHTTPRequestHandler):
 
         if action == "buy_shop_item":
             payload = _handle_buy_shop_item(identity, users, body)
+            send_json(self, 200 if payload.get("ok") else 400, payload)
+            return
+
+        if action == "toggle_apps":
+            payload = _handle_toggle_apps(identity, users)
             send_json(self, 200 if payload.get("ok") else 400, payload)
             return
 

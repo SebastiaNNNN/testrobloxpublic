@@ -524,8 +524,8 @@
                     <div class="card-title"><i class="fas fa-list"></i> Aplicatiile Mele</div>
                     <div class="table-wrap">
                         <table>
-                            <thead><tr><th>Data</th><th>Factiune</th><th>Status</th><th>Review</th></tr></thead>
-                            <tbody id="my-apps-body"><tr><td colspan="4" class="empty-msg">Nu ai aplicatii momentan.</td></tr></tbody>
+                            <thead><tr><th>Data</th><th>Factiune</th><th>Status</th><th>Review</th><th>Actiuni</th></tr></thead>
+                            <tbody id="my-apps-body"><tr><td colspan="5" class="empty-msg">Nu ai aplicatii momentan.</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -533,6 +533,10 @@
 
             <div class="card" id="leader-tools" style="display:none">
                 <div class="card-title"><i class="fas fa-crown"></i> Leader Tools - <span id="leader-faction-name" style="color:#00ff88"></span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                    <div class="muted-note" style="margin-top:0;">Status aplicatii: <span id="leader-apps-open-badge" class="badge badge-gray">-</span></div>
+                    <button id="toggle-apps-btn" class="tiny-btn" onclick="toggleFactionApps()">Toggle Aplicatii</button>
+                </div>
                 <div class="split-2" style="margin-bottom:12px">
                     <div class="field" style="margin-bottom:0">
                         <label>Adauga lider nou</label>
@@ -946,6 +950,16 @@
         return d.toLocaleString("ro-RO");
     }
 
+    function appStatusInfo(rawStatus) {
+        const status = String(rawStatus || "pending").toLowerCase();
+        if (status === "pending") return { label: "PENDING", cls: "badge-orange" };
+        if (status === "invited" || status === "accepted") return { label: "INVITED", cls: "badge-green" };
+        if (status === "rejected") return { label: "REJECTED", cls: "badge-red" };
+        if (status === "joined") return { label: "JOINED", cls: "badge-blue" };
+        if (status.startsWith("archived")) return { label: "ARCHIVED", cls: "badge-gray" };
+        return { label: status.toUpperCase(), cls: "badge-gray" };
+    }
+
     function setStatusLine(id, ok, text) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -981,19 +995,33 @@
     function renderMyApplications(apps) {
         const body = document.getElementById("my-apps-body");
         if (!apps?.length) {
-            body.innerHTML = "<tr><td colspan='4' class='empty-msg'>Nu ai aplicatii momentan.</td></tr>";
+            body.innerHTML = "<tr><td colspan='5' class='empty-msg'>Nu ai aplicatii momentan.</td></tr>";
             return;
         }
 
         body.innerHTML = apps.map((app) => {
-            const status = String(app.status || "pending");
-            const badgeClass = status === "accepted" ? "badge-green" : status === "rejected" ? "badge-red" : "badge-orange";
+            const status = String(app.status || "pending").toLowerCase();
+            const statusInfo = appStatusInfo(status);
+            const appId = encodeURIComponent(app.id || "");
+            let actions = "-";
+            if (appId) {
+                if (statusInfo.label === "INVITED") {
+                    actions = `
+                        <button class="tiny-btn" onclick="respondFactionInvite('${appId}','accept')">Accepta</button>
+                        <button class="tiny-btn danger" onclick="respondFactionInvite('${appId}','decline')">Refuza</button>
+                    `;
+                } else if (statusInfo.label === "REJECTED") {
+                    actions = `<button class="tiny-btn" onclick="respondFactionInvite('${appId}','archive')">Arhiveaza</button>`;
+                }
+            }
+            const reviewText = app.reviewed_by || app.feedback || "-";
             return `
                 <tr>
                     <td>${fmtDate(app.created_at)}</td>
                     <td>${safeHtml(app.faction || "-")}</td>
-                    <td><span class="badge ${badgeClass}">${safeHtml(status.toUpperCase())}</span></td>
-                    <td>${safeHtml(app.reviewed_by || "-")}</td>
+                    <td><span class="badge ${statusInfo.cls}">${safeHtml(statusInfo.label)}</span></td>
+                    <td>${safeHtml(reviewText)}</td>
+                    <td style="display:flex;gap:6px;flex-wrap:wrap;">${actions}</td>
                 </tr>
             `;
         }).join("");
@@ -1084,6 +1112,12 @@
         if (data.is_leader) {
             leaderTools.style.display = "block";
             document.getElementById("leader-faction-name").textContent = data.my_faction || "-";
+            const leaderAppsBadge = document.getElementById("leader-apps-open-badge");
+            const toggleAppsBtn = document.getElementById("toggle-apps-btn");
+            const appsOpen = !!data.my_faction_apps_open;
+            leaderAppsBadge.className = "badge " + (appsOpen ? "badge-green" : "badge-red");
+            leaderAppsBadge.textContent = appsOpen ? "OPEN" : "CLOSED";
+            toggleAppsBtn.textContent = appsOpen ? "Inchide Aplicatii" : "Deschide Aplicatii";
             renderLeaderApplications(data.leader_pending_apps || []);
             renderLeaderMembers(data.leader_members || []);
         } else {
@@ -1160,7 +1194,16 @@
 
     window.reviewFactionApplication = async function(encodedAppId, decision) {
         const appId = decodeURIComponent(encodedAppId);
-        const data = await panelApi("review_application", { appId, decision });
+        let reason = "";
+        if (decision === "reject") {
+            reason = prompt("Motiv respingere:", "Aplicatia nu indeplineste criteriile minime.");
+            if (!reason || reason.trim().length < 3) {
+                setStatusLine("leader-status", false, "Trebuie un motiv de minim 3 caractere pentru reject.");
+                return;
+            }
+        }
+
+        const data = await panelApi("review_application", { appId, decision, reason });
         if (!data.ok) {
             setStatusLine("leader-status", false, data.msg || "Actiunea a esuat.");
             return;
@@ -1168,6 +1211,19 @@
         setStatusLine("leader-status", true, data.msg || "Aplicatia a fost procesata.");
         await loadAllUsers();
         loadFactions();
+        await refreshFactionHub();
+    };
+
+    window.respondFactionInvite = async function(encodedAppId, decision) {
+        const appId = decodeURIComponent(encodedAppId);
+        const data = await panelApi("respond_invite", { appId, decision });
+        if (!data.ok) {
+            setStatusLine("apply-status", false, data.msg || "Actiunea a esuat.");
+            return;
+        }
+
+        setStatusLine("apply-status", true, data.msg || "Aplicatia a fost actualizata.");
+        await loadAllUsers();
         await refreshFactionHub();
     };
 
@@ -1214,6 +1270,16 @@
         }
         setStatusLine("leader-status", true, data.msg || "Warn aplicat.");
         await loadAllUsers();
+        await refreshFactionHub();
+    };
+
+    window.toggleFactionApps = async function() {
+        const data = await panelApi("toggle_apps");
+        if (!data.ok) {
+            setStatusLine("leader-status", false, data.msg || "Nu am putut modifica statusul aplicatiilor.");
+            return;
+        }
+        setStatusLine("leader-status", true, data.msg || "Status aplicatii actualizat.");
         await refreshFactionHub();
     };
 
