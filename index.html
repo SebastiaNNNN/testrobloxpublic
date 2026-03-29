@@ -223,6 +223,33 @@
         .faction-card-item .fcount { font-size: 12px; color: #64748b; }
         .faction-card-item .fcount span { color: #00ff88; font-weight: 700; }
 
+        .split-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .status-line {
+            margin-top: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03); font-size: 12px; color: #94a3b8; display: none;
+        }
+        .status-line.ok { display:block; border-color: rgba(0,255,136,0.25); color:#86efac; }
+        .status-line.err { display:block; border-color: rgba(248,113,113,0.25); color:#fca5a5; }
+
+        .tiny-btn {
+            border: 1px solid rgba(255,255,255,0.12); border-radius: 9px; padding: 6px 10px;
+            background: rgba(255,255,255,0.05); color: #e2e8f0; font-size: 11px; cursor: pointer; font-weight: 700;
+        }
+        .tiny-btn:hover { border-color: rgba(0,255,136,0.4); color:#00ff88; }
+        .tiny-btn.danger { border-color: rgba(248,113,113,0.25); color:#fca5a5; }
+        .tiny-btn.danger:hover { border-color: rgba(248,113,113,0.45); color:#fecaca; }
+
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+        .shop-card {
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; background: rgba(255,255,255,0.02); padding: 14px;
+        }
+        .shop-name { font-size: 14px; font-weight: 800; color:#fff; }
+        .shop-desc { margin-top: 6px; color:#94a3b8; font-size: 12px; min-height: 34px; }
+        .shop-row { display:flex; align-items:center; justify-content:space-between; gap: 8px; margin-top: 10px; }
+        .shop-price { font-size: 12px; color:#fcd34d; font-weight: 800; }
+
+        .muted-note { color:#64748b; font-size:12px; margin-top:8px; }
+
         /* ---- LOADING PLACEHOLDER ---- */
         .empty-msg { color: #64748b; font-size: 13px; text-align: center; padding: 32px; }
 
@@ -237,6 +264,7 @@
             .sidebar-bottom { width: 100%; padding-top: 8px; border: none; }
             .content { padding: 16px; }
             .stat-grid { grid-template-columns: 1fr 1fr; }
+            .split-2 { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -328,7 +356,8 @@
             <div class="nav-item active" data-page="dash" onclick="goPage('dash')"><i class="fas fa-chart-bar"></i> Dashboard</div>
             <div class="nav-item" data-page="profile" onclick="goPage('profile')"><i class="fas fa-user"></i> Profilul Meu</div>
             <div class="nav-item" data-page="players" onclick="goPage('players')"><i class="fas fa-users"></i> Jucători</div>
-            <div class="nav-item" data-page="factions" onclick="goPage('factions')"><i class="fas fa-shield-alt"></i> Facțiuni</div>
+            <div class="nav-item" data-page="factions" onclick="goPage('factions')"><i class="fas fa-shield-alt"></i> Faction Hub</div>
+            <div class="nav-item" data-page="ppshop" onclick="goPage('ppshop')"><i class="fas fa-gem"></i> PP Shop</div>
             <div class="nav-item" data-page="reports" onclick="goPage('reports')"><i class="fas fa-flag"></i> Reclamații</div>
         </nav>
         <div class="sidebar-bottom">
@@ -350,6 +379,7 @@
                 <div class="stat-card"><div class="stat-label">Facțiuni Active</div><div class="stat-val blue" id="ds-factions">—</div></div>
                 <div class="stat-card"><div class="stat-label">Banii Tăi Cash</div><div class="stat-val" id="ds-cash">—</div></div>
                 <div class="stat-card"><div class="stat-label">Banii la Bancă</div><div class="stat-val" id="ds-bank">—</div></div>
+                <div class="stat-card"><div class="stat-label">Premium Points</div><div class="stat-val green" id="ds-pp">—</div></div>
             </div>
             <div class="card">
                 <div class="card-title"><i class="fas fa-trophy"></i> Top Bogați</div>
@@ -385,6 +415,7 @@
                     <div class="kv-item"><div class="k">Bancă</div><div class="v" id="p-bank">$0</div></div>
                     <div class="kv-item"><div class="k">Ore Jucate</div><div class="v" id="p-hours">0h</div></div>
                     <div class="kv-item"><div class="k">RP Points</div><div class="v" id="p-rp">0</div></div>
+                    <div class="kv-item"><div class="k">Premium Points</div><div class="v" id="p-pp">0</div></div>
                     <div class="kv-item"><div class="k">Casă ID</div><div class="v" id="p-house">—</div></div>
                     <div class="kv-item"><div class="k">Job Curent</div><div class="v" id="p-job">—</div></div>
                     <div class="kv-item"><div class="k">Mașini</div><div class="v" id="p-cars">0</div></div>
@@ -448,8 +479,8 @@
         <!-- FACTIUNI -->
         <div class="page" id="page-factions">
             <div class="page-header">
-                <h1>Facțiuni</h1>
-                <p>Toate facțiunile active pe server</p>
+                <h1>Faction Hub</h1>
+                <p>Aplicatii, membri, leader tools si management de factiune</p>
             </div>
             <div class="card">
                 <div class="card-title"><i class="fas fa-layer-group"></i> Distribuție Jucători</div>
@@ -468,6 +499,91 @@
                     <table>
                         <thead><tr><th>Jucător</th><th>Rank</th><th>Level</th><th>Cash</th><th>Last Online</th></tr></thead>
                         <tbody id="faction-members-body"><tr><td colspan="5" class="empty-msg">Selectează o facțiune.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="split-2">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-paper-plane"></i> Aplicatie Factiune</div>
+                    <div class="field" style="margin-bottom:12px">
+                        <label>Factiune</label>
+                        <select id="apply-faction" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;">
+                            <option value="">Alege factiunea</option>
+                        </select>
+                    </div>
+                    <div class="field" style="margin-bottom:12px">
+                        <label>Mesaj Aplicatie</label>
+                        <textarea id="apply-message" placeholder="Experienta ta, de ce vrei in factiune..." style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;resize:vertical;min-height:90px;font-family:inherit"></textarea>
+                    </div>
+                    <button class="search-btn" style="width:100%" onclick="submitFactionApplication()"><i class="fas fa-check"></i> Trimite aplicatia</button>
+                    <div id="apply-status" class="status-line"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-list"></i> Aplicatiile Mele</div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Data</th><th>Factiune</th><th>Status</th><th>Review</th></tr></thead>
+                            <tbody id="my-apps-body"><tr><td colspan="4" class="empty-msg">Nu ai aplicatii momentan.</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="leader-tools" style="display:none">
+                <div class="card-title"><i class="fas fa-crown"></i> Leader Tools - <span id="leader-faction-name" style="color:#00ff88"></span></div>
+                <div class="split-2" style="margin-bottom:12px">
+                    <div class="field" style="margin-bottom:0">
+                        <label>Adauga lider nou</label>
+                        <input id="leader-add-user" type="text" placeholder="Username Roblox">
+                    </div>
+                    <div style="display:flex;align-items:end">
+                        <button class="search-btn" style="width:100%" onclick="addFactionLeader()"><i class="fas fa-user-shield"></i> Promoveaza Leader</button>
+                    </div>
+                </div>
+                <div id="leader-status" class="status-line"></div>
+
+                <div class="card-title" style="margin-top:14px"><i class="fas fa-inbox"></i> Aplicatii Pending</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Data</th><th>Jucator</th><th>Mesaj</th><th>Actiuni</th></tr></thead>
+                        <tbody id="leader-apps-body"><tr><td colspan="4" class="empty-msg">Nicio aplicatie pending.</td></tr></tbody>
+                    </table>
+                </div>
+
+                <div class="card-title" style="margin-top:14px"><i class="fas fa-users-cog"></i> Management Membri</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Jucator</th><th>Rank</th><th>Warns</th><th>Last Online</th><th>Actiuni</th></tr></thead>
+                        <tbody id="leader-members-body"><tr><td colspan="5" class="empty-msg">Nu exista membri.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page-ppshop">
+            <div class="page-header">
+                <h1>PP Shop</h1>
+                <p>Cumpara beneficii folosind Premium Points</p>
+            </div>
+            <div class="card">
+                <div class="card-title"><i class="fas fa-wallet"></i> Sold Curent</div>
+                <div style="font-size:32px;font-weight:900;color:#fcd34d"><span id="pp-balance">0</span> PP</div>
+                <div class="muted-note">Cumparaturile sunt inregistrate in panel si pregatite pentru sync pe joc.</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-store"></i> Oferte</div>
+                <div class="shop-grid" id="shop-items"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-history"></i> Istoric Cumparaturi</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Data</th><th>Item</th><th>Cost</th><th>Status</th></tr></thead>
+                        <tbody id="shop-history-body"><tr><td colspan="4" class="empty-msg">Nu ai cumparaturi inca.</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -525,6 +641,14 @@
     let currentRobloxName = null;
     let allUsers = {};
     let allFactionMembers = [];
+    let hubSnapshot = null;
+
+    const SHOP_ITEMS = [
+        { id: "cash_10k", name: "$10,000 Cash", cost: 10, desc: "Boost rapid pentru inceput.", kind: "cash", amount: 10000 },
+        { id: "cash_50k", name: "$50,000 Cash", cost: 45, desc: "Pachet mare pentru economie.", kind: "cash", amount: 50000 },
+        { id: "rp_25", name: "25 RP Points", cost: 14, desc: "Progress mai rapid in profil.", kind: "rp", amount: 25 },
+        { id: "garage_1", name: "+1 Slot Garaj", cost: 28, desc: "Spatiu extra pentru masini.", kind: "garage", amount: 1 }
+    ];
 
     const Toast = Swal.mixin({
         toast: true, position: 'top-end', showConfirmButton: false,
@@ -539,7 +663,13 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('page-' + page).classList.add('active');
         document.querySelector(`[data-page="${page}"]`).classList.add('active');
-        if(page === 'factions') loadFactions();
+        if(page === 'factions') {
+            loadFactions();
+            refreshFactionHub();
+        }
+        if(page === 'ppshop') {
+            refreshPPShop();
+        }
     }
 
     window.showCard = function(id) {
@@ -575,6 +705,9 @@
                 showApp();
                 listenMyProfile(currentRobloxName);
                 loadDashboard();
+                renderShopItems();
+                await refreshFactionHub();
+                await refreshPPShop();
             }
         } else {
             loading.style.display = 'none';
@@ -631,6 +764,7 @@
             document.getElementById('p-bank').innerText = '$' + fmt(d.banii_banca);
             document.getElementById('p-hours').innerText = (d.ore_jucate || 0) + 'h';
             document.getElementById('p-rp').innerText = fmt(d.rp);
+            document.getElementById('p-pp').innerText = fmt(d.premium_points || 0);
             document.getElementById('p-house').innerText = d.casa_detinuta > 0 ? 'ID ' + d.casa_detinuta : '—';
             document.getElementById('p-job').innerText = d.job_curent || '—';
             const cars = Array.isArray(d.masini) ? d.masini : [];
@@ -648,6 +782,8 @@
             // Dashboard stats
             document.getElementById('ds-cash').innerText = '$' + fmt(d.banii_cash);
             document.getElementById('ds-bank').innerText = '$' + fmt(d.banii_banca);
+            document.getElementById('ds-pp').innerText = fmt(d.premium_points || 0);
+            document.getElementById('pp-balance').innerText = fmt(d.premium_points || 0);
         });
     }
 
@@ -762,6 +898,292 @@
         const filtered = q ? allFactionMembers.filter(([name,d]) => name.toLowerCase().includes(q) || (d.nume_rp||'').toLowerCase().includes(q)) : allFactionMembers;
         renderFactionMembers(filtered);
     }
+
+    // ---- FACTION HUB + PP SHOP ----
+    function safeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "\"": "&quot;",
+            "'": "&#39;",
+        }[char]));
+    }
+
+    function fmtDate(ts) {
+        if (!ts) return "-";
+        const d = new Date(Number(ts));
+        if (Number.isNaN(d.getTime())) return "-";
+        return d.toLocaleString("ro-RO");
+    }
+
+    function setStatusLine(id, ok, text) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = "status-line " + (ok ? "ok" : "err");
+        el.textContent = text;
+    }
+
+    async function panelApi(action, payload = {}) {
+        if (!currentUser) {
+            return { ok: false, msg: "Nu esti autentificat." };
+        }
+
+        try {
+            const idToken = await currentUser.getIdToken();
+            const response = await fetch("/api/faction-panel", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action, idToken, ...payload }),
+            });
+
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = { ok: false, msg: "Raspuns API invalid." };
+            }
+            return data;
+        } catch (err) {
+            return { ok: false, msg: "Conexiune API esuata: " + (err?.message || "unknown") };
+        }
+    }
+
+    function renderMyApplications(apps) {
+        const body = document.getElementById("my-apps-body");
+        if (!apps?.length) {
+            body.innerHTML = "<tr><td colspan='4' class='empty-msg'>Nu ai aplicatii momentan.</td></tr>";
+            return;
+        }
+
+        body.innerHTML = apps.map((app) => {
+            const status = String(app.status || "pending");
+            const badgeClass = status === "accepted" ? "badge-green" : status === "rejected" ? "badge-red" : "badge-orange";
+            return `
+                <tr>
+                    <td>${fmtDate(app.created_at)}</td>
+                    <td>${safeHtml(app.faction || "-")}</td>
+                    <td><span class="badge ${badgeClass}">${safeHtml(status.toUpperCase())}</span></td>
+                    <td>${safeHtml(app.reviewed_by || "-")}</td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    function renderLeaderApplications(apps) {
+        const body = document.getElementById("leader-apps-body");
+        if (!apps?.length) {
+            body.innerHTML = "<tr><td colspan='4' class='empty-msg'>Nicio aplicatie pending.</td></tr>";
+            return;
+        }
+
+        body.innerHTML = apps.map((app) => `
+            <tr>
+                <td>${fmtDate(app.created_at)}</td>
+                <td><strong>${safeHtml(app.applicant || "-")}</strong></td>
+                <td>${safeHtml(app.message || "-")}</td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="tiny-btn" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','accept')">Accepta</button>
+                    <button class="tiny-btn danger" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','reject')">Respinge</button>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    function renderLeaderMembers(members) {
+        const body = document.getElementById("leader-members-body");
+        if (!members?.length) {
+            body.innerHTML = "<tr><td colspan='5' class='empty-msg'>Nu exista membri.</td></tr>";
+            return;
+        }
+
+        body.innerHTML = members.map((member) => `
+            <tr>
+                <td><strong>${safeHtml(member.username)}</strong></td>
+                <td>${member.rank || 0}</td>
+                <td>${member.warns_total || 0}</td>
+                <td>${safeHtml(member.last_online || "-")}</td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="tiny-btn danger" onclick="giveFactionWarn('${encodeURIComponent(member.username)}')">Warn</button>
+                    <button class="tiny-btn" onclick="promoteLeaderFromList('${encodeURIComponent(member.username)}')">Set Leader</button>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    function renderApplyFactionOptions(factions) {
+        const select = document.getElementById("apply-faction");
+        if (!select) return;
+        const current = select.value;
+        const options = factions?.length
+            ? factions.map((faction) => `<option value="${safeHtml(faction)}">${safeHtml(faction)}</option>`).join("")
+            : "";
+        select.innerHTML = `<option value="">Alege factiunea</option>${options}`;
+        if (current && factions?.includes(current)) {
+            select.value = current;
+        }
+    }
+
+    async function refreshFactionHub() {
+        if (!currentUser) return;
+        const data = await panelApi("list_hub");
+        if (!data.ok) {
+            setStatusLine("apply-status", false, data.msg || "Nu am putut incarca Faction Hub.");
+            return;
+        }
+
+        hubSnapshot = data;
+        renderMyApplications(data.my_applications || []);
+        renderApplyFactionOptions(data.available_factions || []);
+
+        const leaderTools = document.getElementById("leader-tools");
+        if (data.is_leader) {
+            leaderTools.style.display = "block";
+            document.getElementById("leader-faction-name").textContent = data.my_faction || "-";
+            renderLeaderApplications(data.leader_pending_apps || []);
+            renderLeaderMembers(data.leader_members || []);
+        } else {
+            leaderTools.style.display = "none";
+        }
+    }
+
+    async function refreshPPShop() {
+        if (!currentUser) return;
+        const data = await panelApi("list_hub");
+        if (!data.ok) {
+            return;
+        }
+        hubSnapshot = data;
+        document.getElementById("pp-balance").textContent = fmt(data.my_pp || 0);
+        renderShopHistory(data.shop_history || []);
+        renderShopItems(data.my_pp || 0);
+    }
+
+    function renderShopHistory(rows) {
+        const body = document.getElementById("shop-history-body");
+        if (!rows?.length) {
+            body.innerHTML = "<tr><td colspan='4' class='empty-msg'>Nu ai cumparaturi inca.</td></tr>";
+            return;
+        }
+
+        body.innerHTML = rows.map((row) => `
+            <tr>
+                <td>${fmtDate(row.ts)}</td>
+                <td>${safeHtml(row.item_name || row.item_id || "-")}</td>
+                <td>${Number(row.cost_pp || 0)} PP</td>
+                <td><span class="badge badge-green">${safeHtml((row.status || "done").toUpperCase())}</span></td>
+            </tr>
+        `).join("");
+    }
+
+    function renderShopItems(currentPP = 0) {
+        const root = document.getElementById("shop-items");
+        if (!root) return;
+        root.innerHTML = SHOP_ITEMS.map((item) => {
+            const blocked = Number(currentPP || 0) < Number(item.cost || 0);
+            return `
+                <div class="shop-card">
+                    <div class="shop-name">${safeHtml(item.name)}</div>
+                    <div class="shop-desc">${safeHtml(item.desc)}</div>
+                    <div class="shop-row">
+                        <span class="shop-price">${item.cost} PP</span>
+                        <button class="tiny-btn ${blocked ? "danger" : ""}" onclick="buyShopItem('${item.id}')" ${blocked ? "disabled" : ""}>Cumpara</button>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    window.submitFactionApplication = async function() {
+        const faction = document.getElementById("apply-faction").value.trim();
+        const message = document.getElementById("apply-message").value.trim();
+
+        if (!faction) {
+            setStatusLine("apply-status", false, "Alege o factiune.");
+            return;
+        }
+
+        const data = await panelApi("submit_application", { faction, message });
+        if (!data.ok) {
+            setStatusLine("apply-status", false, data.msg || "Nu am putut trimite aplicatia.");
+            return;
+        }
+
+        setStatusLine("apply-status", true, "Aplicatia a fost trimisa.");
+        document.getElementById("apply-message").value = "";
+        await refreshFactionHub();
+    };
+
+    window.reviewFactionApplication = async function(encodedAppId, decision) {
+        const appId = decodeURIComponent(encodedAppId);
+        const data = await panelApi("review_application", { appId, decision });
+        if (!data.ok) {
+            setStatusLine("leader-status", false, data.msg || "Actiunea a esuat.");
+            return;
+        }
+        setStatusLine("leader-status", true, data.msg || "Aplicatia a fost procesata.");
+        await loadAllUsers();
+        loadFactions();
+        await refreshFactionHub();
+    };
+
+    window.addFactionLeader = async function() {
+        const target = document.getElementById("leader-add-user").value.trim();
+        if (!target) {
+            setStatusLine("leader-status", false, "Introdu username-ul jucatorului.");
+            return;
+        }
+        const data = await panelApi("add_leader", { target });
+        if (!data.ok) {
+            setStatusLine("leader-status", false, data.msg || "Nu am putut promova leader.");
+            return;
+        }
+        setStatusLine("leader-status", true, data.msg || "Leader adaugat.");
+        document.getElementById("leader-add-user").value = "";
+        await loadAllUsers();
+        loadFactions();
+        await refreshFactionHub();
+    };
+
+    window.promoteLeaderFromList = async function(encodedUser) {
+        const target = decodeURIComponent(encodedUser);
+        const data = await panelApi("add_leader", { target });
+        if (!data.ok) {
+            setStatusLine("leader-status", false, data.msg || "Nu am putut promova liderul.");
+            return;
+        }
+        setStatusLine("leader-status", true, data.msg || `${target} este acum leader.`);
+        await loadAllUsers();
+        loadFactions();
+        await refreshFactionHub();
+    };
+
+    window.giveFactionWarn = async function(encodedUser) {
+        const target = decodeURIComponent(encodedUser);
+        const reason = prompt(`Motiv warn pentru ${target}:`, "Incalcare regulament factiune");
+        if (!reason) return;
+
+        const data = await panelApi("warn_member", { target, reason });
+        if (!data.ok) {
+            setStatusLine("leader-status", false, data.msg || "Nu am putut aplica warn.");
+            return;
+        }
+        setStatusLine("leader-status", true, data.msg || "Warn aplicat.");
+        await loadAllUsers();
+        await refreshFactionHub();
+    };
+
+    window.buyShopItem = async function(itemId) {
+        const data = await panelApi("buy_shop_item", { itemId });
+        if (!data.ok) {
+            Toast.fire({ icon: "error", title: data.msg || "Cumparatura esuata." });
+            return;
+        }
+        Toast.fire({ icon: "success", title: data.msg || "Cumparatura finalizata." });
+        await loadAllUsers();
+        await refreshPPShop();
+        await refreshFactionHub();
+    };
 
     // ---- REPORTS ----
     window.sendReport = async function() {
