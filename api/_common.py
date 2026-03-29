@@ -27,16 +27,19 @@ def _base_url() -> str:
     return DATABASE_URL.rstrip("/")
 
 
-def _with_auth(url: str) -> str:
-    if not FIREBASE_DB_SECRET:
+def _with_auth(url: str, auth_token: Optional[str] = None) -> str:
+    token = (FIREBASE_DB_SECRET or "").strip()
+    if not token:
+        token = (auth_token or "").strip()
+    if not token:
         return url
     sep = "&" if "?" in url else "?"
-    return f"{url}{sep}auth={FIREBASE_DB_SECRET}"
+    return f"{url}{sep}auth={quote(token, safe='')}"
 
 
-def firebase_url(path: str) -> str:
+def firebase_url(path: str, auth_token: Optional[str] = None) -> str:
     cleaned = path.strip("/")
-    return _with_auth(f"{_base_url()}/{cleaned}.json")
+    return _with_auth(f"{_base_url()}/{cleaned}.json", auth_token=auth_token)
 
 
 def read_json(handler) -> Tuple[Dict[str, Any], Optional[str]]:
@@ -81,9 +84,9 @@ def validate_admin(body: Dict[str, Any]) -> Tuple[bool, str]:
 # Firebase helpers
 # ---------------------------------------------------------------------------
 
-def firebase_get(path: str) -> Tuple[bool, Any, str]:
+def firebase_get(path: str, auth_token: Optional[str] = None) -> Tuple[bool, Any, str]:
     try:
-        response = requests.get(firebase_url(path), timeout=12)
+        response = requests.get(firebase_url(path, auth_token=auth_token), timeout=12)
     except Exception as exc:
         return False, None, f"Conexiune Firebase esuata: {exc}"
 
@@ -97,11 +100,16 @@ def firebase_get(path: str) -> Tuple[bool, Any, str]:
         return False, None, "Raspuns Firebase invalid (nu e JSON)"
 
 
-def firebase_write(path: str, payload: Dict[str, Any], method: str) -> Tuple[bool, Any, str]:
+def firebase_write(
+    path: str,
+    payload: Dict[str, Any],
+    method: str,
+    auth_token: Optional[str] = None,
+) -> Tuple[bool, Any, str]:
     try:
         response = requests.request(
             method.upper(),
-            firebase_url(path),
+            firebase_url(path, auth_token=auth_token),
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=12,
@@ -110,7 +118,10 @@ def firebase_write(path: str, payload: Dict[str, Any], method: str) -> Tuple[boo
         return False, None, f"Conexiune Firebase esuata: {exc}"
 
     if response.status_code not in (200, 201):
-        return False, None, f"Firebase write HTTP {response.status_code}: {response.text[:250]}"
+        tip = ""
+        if response.status_code in (401, 403) and auth_token and not FIREBASE_DB_SECRET:
+            tip = " Configureaza FIREBASE_DB_SECRET in Vercel env pentru write-uri privilegiate."
+        return False, None, f"Firebase write HTTP {response.status_code}: {response.text[:250]}{tip}"
 
     try:
         data = response.json() if response.text else {}
@@ -119,12 +130,12 @@ def firebase_write(path: str, payload: Dict[str, Any], method: str) -> Tuple[boo
     return True, data, ""
 
 
-def firebase_post(path: str, payload: Dict[str, Any]) -> Tuple[bool, Any, str]:
-    return firebase_write(path, payload, "POST")
+def firebase_post(path: str, payload: Dict[str, Any], auth_token: Optional[str] = None) -> Tuple[bool, Any, str]:
+    return firebase_write(path, payload, "POST", auth_token=auth_token)
 
 
-def firebase_put(path: str, payload: Dict[str, Any]) -> Tuple[bool, Any, str]:
-    return firebase_write(path, payload, "PUT")
+def firebase_put(path: str, payload: Dict[str, Any], auth_token: Optional[str] = None) -> Tuple[bool, Any, str]:
+    return firebase_write(path, payload, "PUT", auth_token=auth_token)
 
 
 # ---------------------------------------------------------------------------

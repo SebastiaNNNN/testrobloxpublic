@@ -88,18 +88,21 @@ def _parse_game_factions():
         return _FACTION_CONFIG_CACHE["data"]
 
     base_dir = os.path.dirname(os.path.dirname(__file__))
-    cfg_path = os.path.join(
-        base_dir,
-        "scripts",
-        "ReplicatedStorage",
-        "SharedConfigs",
-        "FactionConfig.luau",
-    )
+    candidates = [
+        os.path.join(base_dir, "scripts", "ReplicatedStorage", "SharedConfigs", "FactionConfig.luau"),
+        os.path.join(base_dir, "src", "ReplicatedStorage", "SharedConfigs", "FactionConfig.luau"),
+    ]
 
-    try:
-        with open(cfg_path, "r", encoding="utf-8", errors="ignore") as fp:
-            text = fp.read()
-    except Exception:
+    text = ""
+    for cfg_path in candidates:
+        try:
+            with open(cfg_path, "r", encoding="utf-8", errors="ignore") as fp:
+                text = fp.read()
+            if text:
+                break
+        except Exception:
+            continue
+    if not text:
         return list(DEFAULT_GAME_FACTIONS)
 
     table_match = re.search(r"FactionConfig\.Factions\s*=\s*\{", text)
@@ -158,8 +161,8 @@ def _safe_path(value: str) -> str:
     return quote((value or "").strip(), safe="")
 
 
-def _firebase_patch(path: str, payload: dict):
-    return firebase_write(path, payload, "PATCH")
+def _firebase_patch(path: str, payload: dict, auth_token: str | None = None):
+    return firebase_write(path, payload, "PATCH", auth_token=auth_token)
 
 
 def _as_dict(payload) -> dict:
@@ -176,6 +179,35 @@ def _flatten_apps(apps_raw) -> list[dict]:
         apps.append(row)
     apps.sort(key=lambda item: item.get("created_at", 0), reverse=True)
     return apps
+
+
+def _sanitize_letters_spaces(value: str, max_len: int = 15) -> str:
+    clean = re.sub(r"[^A-Za-z\s]", "", str(value or ""))
+    clean = re.sub(r"\s+", " ", clean).strip()
+    return clean[:max_len]
+
+
+def _count_real_chars(value: str) -> int:
+    return len(re.sub(r"\s+", "", str(value or "")))
+
+
+def _looks_like_spam(value: str) -> bool:
+    text = str(value or "")
+    return bool(re.search(r"(.)\1{5,}", text))
+
+
+def _as_bool(value, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in ("true", "1", "yes", "open"):
+            return True
+        if text in ("false", "0", "no", "closed"):
+            return False
+    return default
 
 
 def _verify_identity(id_token: str):
@@ -206,7 +238,7 @@ def _verify_identity(id_token: str):
     if not uid:
         return False, None, "UID lipsa in token."
 
-    ok, site_user_raw, err = firebase_get(f"site_users/{_safe_path(uid)}")
+    ok, site_user_raw, err = firebase_get(f"site_users/{_safe_path(uid)}", auth_token=id_token)
     if not ok:
         return False, None, err
     site_user = _as_dict(site_user_raw)
@@ -215,7 +247,7 @@ def _verify_identity(id_token: str):
     if not username:
         return False, None, "Userul nu are robloxUsername in site_users."
 
-    return True, {"uid": uid, "username": username}, ""
+    return True, {"uid": uid, "username": username, "id_token": id_token}, ""
 
 
 def _send_roblox_command(admin_name: str, command_type: str, target: str, value: str, reason: str):
@@ -246,7 +278,7 @@ def _send_roblox_command(admin_name: str, command_type: str, target: str, value:
     return False, f"Sync joc HTTP {response.status_code}: {response.text[:180]}"
 
 
-def _is_leader(users: dict, username: str, faction: str):
+def _is_leader(users: dict, username: str, faction: str, auth_token: str | None = None):
     if not faction or faction == "Civil":
         return False
 
@@ -254,7 +286,10 @@ def _is_leader(users: dict, username: str, faction: str):
     if parse_int(me.get("rank", 0), 0) >= 5:
         return True
 
-    ok, raw, _ = firebase_get(f"panel/faction_leaders/{_safe_path(faction)}/{_safe_path(username)}")
+    ok, raw, _ = firebase_get(
+        f"panel/faction_leaders/{_safe_path(faction)}/{_safe_path(username)}",
+        auth_token=auth_token,
+    )
     return ok and bool(raw)
 
 
@@ -271,8 +306,8 @@ def _available_factions(users: dict):
     return sorted(found)
 
 
-def _load_faction_runtime_state(game_factions: list[dict]):
-    ok, raw, _ = firebase_get("panel/faction_state")
+def _load_faction_runtime_state(game_factions: list[dict], auth_token: str | None = None):
+    ok, raw, _ = firebase_get("panel/faction_state", auth_token=auth_token)
     state = _as_dict(raw) if ok else {}
     stored_open = _as_dict(state.get("apps_open"))
     stored_sessions = _as_dict(state.get("sessions"))
@@ -281,36 +316,37 @@ def _load_faction_runtime_state(game_factions: list[dict]):
     sessions = {}
     for row in game_factions:
         name = row["name"]
-        apps_open[name] = bool(stored_open[name]) if name in stored_open else bool(row.get("apps_open", False))
+        apps_open[name] = _as_bool(stored_open[name], False) if name in stored_open else _as_bool(row.get("apps_open", False), False)
         sessions[name] = parse_int(stored_sessions.get(name, 0), 0)
 
     return apps_open, sessions
 
 
-def _save_faction_runtime_state(apps_open: dict, sessions: dict):
+def _save_faction_runtime_state(apps_open: dict, sessions: dict, auth_token: str | None = None):
     payload = {"apps_open": apps_open, "sessions": sessions}
-    return firebase_write("panel/faction_state", payload, "PUT")
+    return firebase_write("panel/faction_state", payload, "PUT", auth_token=auth_token)
 
 
 def _handle_list_hub(identity: dict, users: dict):
     username = identity["username"]
+    auth_token = identity.get("id_token", "")
     profile = _as_dict(users.get(username))
     if not profile:
         return {"ok": False, "msg": "Profilul tau Roblox nu exista in users."}
 
     game_factions_base = _parse_game_factions()
-    apps_open_map, session_map = _load_faction_runtime_state(game_factions_base)
+    apps_open_map, session_map = _load_faction_runtime_state(game_factions_base, auth_token=auth_token)
     game_factions = []
     for row in game_factions_base:
         item = dict(row)
-        item["apps_open"] = bool(apps_open_map.get(row["name"], row.get("apps_open", False)))
+        item["apps_open"] = _as_bool(apps_open_map.get(row["name"]), _as_bool(row.get("apps_open", False), False))
         item["session_id"] = parse_int(session_map.get(row["name"], 0), 0)
         game_factions.append(item)
 
     available = [row["name"] for row in game_factions] if game_factions else _available_factions(users)
     open_factions = [row["name"] for row in game_factions if row.get("apps_open")] if game_factions else []
 
-    all_apps = _flatten_apps(firebase_get("panel/faction_applications")[1])
+    all_apps = _flatten_apps(firebase_get("panel/faction_applications", auth_token=auth_token)[1])
     my_apps = []
     for app in all_apps:
         if str(app.get("applicant", "")) != username:
@@ -321,7 +357,7 @@ def _handle_list_hub(identity: dict, users: dict):
     my_apps = my_apps[:60]
 
     my_faction = str(profile.get("factiune", "Civil")) or "Civil"
-    is_leader = _is_leader(users, username, my_faction)
+    is_leader = _is_leader(users, username, my_faction, auth_token=auth_token)
 
     leader_pending = []
     leader_members = []
@@ -347,7 +383,7 @@ def _handle_list_hub(identity: dict, users: dict):
             )
         leader_members.sort(key=lambda row: (-row["rank"], row["username"].lower()))
 
-    all_purchases = _as_dict(firebase_get("panel/shop_purchases")[1])
+    all_purchases = _as_dict(firebase_get("panel/shop_purchases", auth_token=auth_token)[1])
     history = []
     for _, row in all_purchases.items():
         if not isinstance(row, dict):
@@ -366,7 +402,7 @@ def _handle_list_hub(identity: dict, users: dict):
         "ok": True,
         "me": username,
         "my_faction": my_faction,
-        "my_faction_apps_open": bool(apps_open_map.get(my_faction, False)),
+        "my_faction_apps_open": _as_bool(apps_open_map.get(my_faction, False), False),
         "my_notifications": my_notifications,
         "is_leader": is_leader,
         "my_pp": parse_int(profile.get("premium_points", 0), 0),
@@ -382,8 +418,10 @@ def _handle_list_hub(identity: dict, users: dict):
 
 def _handle_submit_application(identity: dict, users: dict, body: dict):
     username = identity["username"]
+    auth_token = identity.get("id_token", "")
     faction = str(body.get("faction", "")).strip()
     message = str(body.get("message", "")).strip()
+    form = _as_dict(body.get("form"))
     if not faction:
         return {"ok": False, "msg": "Faction este obligatorie."}
 
@@ -398,8 +436,8 @@ def _handle_submit_application(identity: dict, users: dict, body: dict):
     if faction not in by_name:
         return {"ok": False, "msg": "Factiunea selectata nu exista."}
 
-    apps_open_map, sessions_map = _load_faction_runtime_state(game_factions)
-    if not bool(apps_open_map.get(faction, by_name[faction].get("apps_open", False))):
+    apps_open_map, sessions_map = _load_faction_runtime_state(game_factions, auth_token=auth_token)
+    if not _as_bool(apps_open_map.get(faction), _as_bool(by_name[faction].get("apps_open", False), False)):
         return {"ok": False, "msg": "Aplicatiile sunt inchise la aceasta factiune."}
 
     my_level = parse_int(profile.get("level", 1), 1)
@@ -412,7 +450,7 @@ def _handle_submit_application(identity: dict, users: dict, body: dict):
 
     current_session = parse_int(sessions_map.get(faction, 0), 0)
 
-    all_apps = _flatten_apps(firebase_get("panel/faction_applications")[1])
+    all_apps = _flatten_apps(firebase_get("panel/faction_applications", auth_token=auth_token)[1])
     for app in all_apps:
         if str(app.get("applicant", "")) != username or str(app.get("faction", "")) != faction:
             continue
@@ -425,28 +463,61 @@ def _handle_submit_application(identity: dict, users: dict, body: dict):
         if status in ("rejected", "archived_rejected", "archived_declined") and app_session == current_session:
             return {"ok": False, "msg": "Ai fost deja respins in sesiunea curenta. Asteapta redeschiderea aplicatiilor."}
 
+    form_name = _sanitize_letters_spaces(form.get("name", username), 15)
+    form_age_raw = re.sub(r"\D+", "", str(form.get("age", "")))[:2]
+    form_about = re.sub(r"\s+", " ", str(form.get("about", "")).strip())[:240]
+    form_reason = str(form.get("reason", message)).strip()[:3000]
+    real_chars = _count_real_chars(form_reason)
+
+    if len(form_name) < 3:
+        return {"ok": False, "msg": "Numele din aplicatie trebuie sa aiba minim 3 litere."}
+    if not form_age_raw:
+        return {"ok": False, "msg": "Varsta este obligatorie."}
+
+    form_age = parse_int(form_age_raw, 0)
+    if form_age < 10 or form_age > 99:
+        return {"ok": False, "msg": "Varsta trebuie sa fie intre 10 si 99."}
+    if len(form_about) < 20:
+        return {"ok": False, "msg": "Descrierea scurta trebuie sa aiba minim 20 caractere."}
+    if real_chars < 500:
+        return {"ok": False, "msg": f"Aplicatia e prea scurta. Minim 500 caractere reale, acum: {real_chars}."}
+    if _looks_like_spam(form_reason):
+        return {"ok": False, "msg": "Aplicatia pare spam (repetitii excesive)."}
+
+    full_message = f"SCURTA DESCRIERE: {form_about}\n\nAPLICATIE:\n{form_reason}"
+    preview = form_reason[:180] + ("..." if len(form_reason) > 180 else "")
+
     payload = {
         "applicant": username,
         "faction": faction,
-        "message": message[:600],
+        "message": full_message,
+        "preview": preview,
+        "form": {
+            "name": form_name,
+            "age": form_age,
+            "about": form_about,
+            "reason": form_reason,
+            "real_chars": real_chars,
+        },
         "status": "pending",
         "session_id": current_session,
         "feedback": "",
         "created_at": _now_ms(),
     }
 
-    ok, _, err = firebase_post("panel/faction_applications", payload)
+    ok, _, err = firebase_post("panel/faction_applications", payload, auth_token=auth_token)
     if not ok:
         return {"ok": False, "msg": err}
 
-    return {"ok": True, "msg": "Aplicatia a fost trimisa."}
+    return {"ok": True, "msg": f"Aplicatia a fost trimisa ({real_chars} caractere reale)."}
 
 
 def _handle_review_application(identity: dict, users: dict, body: dict):
     username = identity["username"]
+    auth_token = identity.get("id_token", "")
     me = _as_dict(users.get(username))
     my_faction = str(me.get("factiune", "Civil")) or "Civil"
-    if not _is_leader(users, username, my_faction):
+    if not _is_leader(users, username, my_faction, auth_token=auth_token):
         return {"ok": False, "msg": "Nu ai drepturi de leader."}
 
     app_id = str(body.get("appId", "")).strip()
@@ -455,7 +526,7 @@ def _handle_review_application(identity: dict, users: dict, body: dict):
     if not app_id or decision not in ("accept", "reject"):
         return {"ok": False, "msg": "appId/decision invalid."}
 
-    ok, app_raw, err = firebase_get(f"panel/faction_applications/{_safe_path(app_id)}")
+    ok, app_raw, err = firebase_get(f"panel/faction_applications/{_safe_path(app_id)}", auth_token=auth_token)
     if not ok:
         return {"ok": False, "msg": err}
     app = _as_dict(app_raw)
@@ -490,6 +561,7 @@ def _handle_review_application(identity: dict, users: dict, body: dict):
             "reviewed_by": username,
             "reviewed_at": _now_ms(),
         },
+        auth_token=auth_token,
     )
     if not ok_app:
         return {"ok": False, "msg": err_app}
@@ -503,6 +575,7 @@ def _handle_review_application(identity: dict, users: dict, body: dict):
             "event": "application_invited" if decision == "accept" else "application_rejected",
             "ts": _now_ms(),
         },
+        auth_token=auth_token,
     )
     if decision == "accept":
         return {"ok": True, "msg": f"{applicant} a fost acceptat si a primit invite in {my_faction}."}
@@ -511,12 +584,13 @@ def _handle_review_application(identity: dict, users: dict, body: dict):
 
 def _handle_respond_invite(identity: dict, users: dict, body: dict):
     username = identity["username"]
+    auth_token = identity.get("id_token", "")
     app_id = str(body.get("appId", "")).strip()
     decision = str(body.get("decision", "")).strip().lower()
     if not app_id or decision not in ("accept", "decline", "archive"):
         return {"ok": False, "msg": "appId/decision invalid."}
 
-    ok, app_raw, err = firebase_get(f"panel/faction_applications/{_safe_path(app_id)}")
+    ok, app_raw, err = firebase_get(f"panel/faction_applications/{_safe_path(app_id)}", auth_token=auth_token)
     if not ok:
         return {"ok": False, "msg": err}
     app = _as_dict(app_raw)
@@ -545,6 +619,7 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
         ok_user, _, err_user = _firebase_patch(
             f"users/{_safe_path(username)}",
             {"factiune": faction, "rank": 1, "faction_joined_at": _now_ms()},
+            auth_token=auth_token,
         )
         if not ok_user:
             return {"ok": False, "msg": err_user}
@@ -554,6 +629,7 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
         ok_app, _, err_app = _firebase_patch(
             f"panel/faction_applications/{_safe_path(app_id)}",
             {"status": "joined", "responded_at": _now_ms()},
+            auth_token=auth_token,
         )
         if not ok_app:
             return {"ok": False, "msg": err_app}
@@ -567,6 +643,7 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
                 "event": "invite_accepted",
                 "ts": _now_ms(),
             },
+            auth_token=auth_token,
         )
         return {"ok": True, "msg": f"Ai intrat in {faction}.", "sync_note": sync_note}
 
@@ -576,6 +653,7 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
         ok_app, _, err_app = _firebase_patch(
             f"panel/faction_applications/{_safe_path(app_id)}",
             {"status": "archived_declined", "responded_at": _now_ms()},
+            auth_token=auth_token,
         )
         if not ok_app:
             return {"ok": False, "msg": err_app}
@@ -587,6 +665,7 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
     ok_app, _, err_app = _firebase_patch(
         f"panel/faction_applications/{_safe_path(app_id)}",
         {"status": "archived_rejected", "responded_at": _now_ms()},
+        auth_token=auth_token,
     )
     if not ok_app:
         return {"ok": False, "msg": err_app}
@@ -595,9 +674,10 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
 
 def _handle_toggle_apps(identity: dict, users: dict):
     username = identity["username"]
+    auth_token = identity.get("id_token", "")
     me = _as_dict(users.get(username))
     my_faction = str(me.get("factiune", "Civil")) or "Civil"
-    if not _is_leader(users, username, my_faction):
+    if not _is_leader(users, username, my_faction, auth_token=auth_token):
         return {"ok": False, "msg": "Nu ai drepturi de leader."}
 
     game_factions = _parse_game_factions()
@@ -605,14 +685,14 @@ def _handle_toggle_apps(identity: dict, users: dict):
     if my_faction not in by_name:
         return {"ok": False, "msg": "Factiunea ta nu exista in configuratia jocului."}
 
-    apps_open, sessions = _load_faction_runtime_state(game_factions)
-    current = bool(apps_open.get(my_faction, by_name[my_faction].get("apps_open", False)))
+    apps_open, sessions = _load_faction_runtime_state(game_factions, auth_token=auth_token)
+    current = _as_bool(apps_open.get(my_faction), _as_bool(by_name[my_faction].get("apps_open", False), False))
     next_state = not current
     apps_open[my_faction] = next_state
     if next_state:
         sessions[my_faction] = int(time.time())
 
-    ok_save, _, save_err = _save_faction_runtime_state(apps_open, sessions)
+    ok_save, _, save_err = _save_faction_runtime_state(apps_open, sessions, auth_token=auth_token)
     if not ok_save:
         return {"ok": False, "msg": save_err}
 
@@ -622,9 +702,10 @@ def _handle_toggle_apps(identity: dict, users: dict):
 
 def _handle_add_leader(identity: dict, users: dict, body: dict):
     username = identity["username"]
+    auth_token = identity.get("id_token", "")
     me = _as_dict(users.get(username))
     my_faction = str(me.get("factiune", "Civil")) or "Civil"
-    if not _is_leader(users, username, my_faction):
+    if not _is_leader(users, username, my_faction, auth_token=auth_token):
         return {"ok": False, "msg": "Nu ai drepturi de leader."}
 
     raw_target = str(body.get("target", "")).strip()
@@ -638,6 +719,7 @@ def _handle_add_leader(identity: dict, users: dict, body: dict):
     ok_user, _, err_user = _firebase_patch(
         f"users/{_safe_path(target)}",
         {"factiune": my_faction, "rank": 5},
+        auth_token=auth_token,
     )
     if not ok_user:
         return {"ok": False, "msg": err_user}
@@ -646,6 +728,7 @@ def _handle_add_leader(identity: dict, users: dict, body: dict):
         f"panel/faction_leaders/{_safe_path(my_faction)}/{_safe_path(target)}",
         {"by": username, "ts": _now_ms()},
         "PUT",
+        auth_token=auth_token,
     )
     if not ok_flag:
         return {"ok": False, "msg": err_flag}
@@ -656,9 +739,10 @@ def _handle_add_leader(identity: dict, users: dict, body: dict):
 
 def _handle_warn_member(identity: dict, users: dict, body: dict):
     username = identity["username"]
+    auth_token = identity.get("id_token", "")
     me = _as_dict(users.get(username))
     my_faction = str(me.get("factiune", "Civil")) or "Civil"
-    if not _is_leader(users, username, my_faction):
+    if not _is_leader(users, username, my_faction, auth_token=auth_token):
         return {"ok": False, "msg": "Nu ai drepturi de leader."}
 
     raw_target = str(body.get("target", "")).strip()
@@ -681,6 +765,7 @@ def _handle_warn_member(identity: dict, users: dict, body: dict):
             "reason": reason,
             "ts": _now_ms(),
         },
+        auth_token=auth_token,
     )
     if not ok_warn:
         return {"ok": False, "msg": err_warn}
@@ -689,6 +774,7 @@ def _handle_warn_member(identity: dict, users: dict, body: dict):
     ok_user, _, err_user = _firebase_patch(
         f"users/{_safe_path(target)}",
         {"faction_warns_total": next_total},
+        auth_token=auth_token,
     )
     if not ok_user:
         return {"ok": False, "msg": err_user}
@@ -698,6 +784,7 @@ def _handle_warn_member(identity: dict, users: dict, body: dict):
 
 def _handle_buy_shop_item(identity: dict, users: dict, body: dict):
     username = identity["username"]
+    auth_token = identity.get("id_token", "")
     item_id = str(body.get("itemId", "")).strip()
     item = SHOP_ITEMS.get(item_id)
     if not item:
@@ -719,7 +806,7 @@ def _handle_buy_shop_item(identity: dict, users: dict, body: dict):
     elif item["kind"] == "garage":
         patch["sloturi_garaj"] = parse_int(profile.get("sloturi_garaj", 0), 0) + int(item["amount"])
 
-    ok_user, _, err_user = _firebase_patch(f"users/{_safe_path(username)}", patch)
+    ok_user, _, err_user = _firebase_patch(f"users/{_safe_path(username)}", patch, auth_token=auth_token)
     if not ok_user:
         return {"ok": False, "msg": err_user}
 
@@ -738,6 +825,7 @@ def _handle_buy_shop_item(identity: dict, users: dict, body: dict):
             "sync_note": sync_note,
             "ts": _now_ms(),
         },
+        auth_token=auth_token,
     )
 
     return {
@@ -765,7 +853,7 @@ class handler(BaseHTTPRequestHandler):
             send_json(self, 401, {"ok": False, "msg": auth_err})
             return
 
-        ok_users, users_raw, users_err = firebase_get("users")
+        ok_users, users_raw, users_err = firebase_get("users", auth_token=id_token)
         if not ok_users:
             send_json(self, 502, {"ok": False, "msg": users_err})
             return

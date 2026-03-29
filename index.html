@@ -506,6 +506,7 @@
             <div class="split-2">
                 <div class="card">
                     <div class="card-title"><i class="fas fa-paper-plane"></i> Aplicatie Factiune</div>
+                    <div id="open-factions-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>
                     <div class="field" style="margin-bottom:12px">
                         <label>Factiune</label>
                         <select id="apply-faction" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;">
@@ -513,8 +514,21 @@
                         </select>
                     </div>
                     <div class="field" style="margin-bottom:12px">
-                        <label>Mesaj Aplicatie</label>
-                        <textarea id="apply-message" placeholder="Experienta ta, de ce vrei in factiune..." style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;resize:vertical;min-height:90px;font-family:inherit"></textarea>
+                        <label>Nume (doar litere, max 15)</label>
+                        <input id="apply-name" type="text" placeholder="Numele tau RPG">
+                    </div>
+                    <div class="field" style="margin-bottom:12px">
+                        <label>Varsta (2 cifre)</label>
+                        <input id="apply-age" type="text" placeholder="Ex: 16">
+                    </div>
+                    <div class="field" style="margin-bottom:12px">
+                        <label>Scurta descriere</label>
+                        <textarea id="apply-about" placeholder="Cine esti, ce experienta ai..." style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;resize:vertical;min-height:80px;font-family:inherit"></textarea>
+                    </div>
+                    <div class="field" style="margin-bottom:12px">
+                        <label>De ce vrei sa intri (min 500 caractere reale)</label>
+                        <textarea id="apply-message" oninput="onApplyReasonInput()" placeholder="Aplicatia completa..." style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;resize:vertical;min-height:220px;font-family:inherit"></textarea>
+                        <div id="apply-char-counter" class="muted-note" style="margin-top:6px;">0 / 500</div>
                     </div>
                     <button class="search-btn" style="width:100%" onclick="submitFactionApplication()"><i class="fas fa-check"></i> Trimite aplicatia</button>
                     <div id="apply-status" class="status-line"></div>
@@ -646,6 +660,8 @@
     let allUsers = {};
     let allFactionMembers = [];
     let hubSnapshot = null;
+    let leaderAppMap = {};
+    let factionHubInterval = null;
 
     const SHOP_ITEMS = [
         { id: "cash_10k", name: "$10,000 Cash", cost: 10, desc: "Boost rapid pentru inceput.", kind: "cash", amount: 10000 },
@@ -667,9 +683,16 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('page-' + page).classList.add('active');
         document.querySelector(`[data-page="${page}"]`).classList.add('active');
+        if (factionHubInterval) {
+            clearInterval(factionHubInterval);
+            factionHubInterval = null;
+        }
         if(page === 'factions') {
             loadFactions();
             refreshFactionHub();
+            factionHubInterval = setInterval(() => {
+                refreshFactionHub();
+            }, 15000);
         }
         if(page === 'ppshop') {
             refreshPPShop();
@@ -868,7 +891,13 @@
         const configRows = hubSnapshot?.game_factions || [];
 
         if (configRows.length) {
-            container.innerHTML = configRows.map((row) => {
+            const orderedRows = [...configRows].sort((a, b) => {
+                const openCmp = Number(!!b.apps_open) - Number(!!a.apps_open);
+                if (openCmp !== 0) return openCmp;
+                return String(a.name || "").localeCompare(String(b.name || ""), "ro");
+            });
+
+            container.innerHTML = orderedRows.map((row) => {
                 const name = row.name;
                 const cnt = Number(counts[name] || 0);
                 const levelReq = Number(row.level_req || 1);
@@ -960,6 +989,39 @@
         return { label: status.toUpperCase(), cls: "badge-gray" };
     }
 
+    function sanitizeApplyName(value) {
+        return String(value || "").replace(/\d+/g, "").replace(/[^a-zA-Z\s]/g, "").replace(/\s+/g, " ").trim().slice(0, 15);
+    }
+
+    function sanitizeApplyAge(value) {
+        return String(value || "").replace(/\D+/g, "").slice(0, 2);
+    }
+
+    function reasonStats(text) {
+        const raw = String(text || "");
+        const realChars = raw.replace(/\s+/g, "").length;
+        const spam = /(.)\1{5,}/.test(raw);
+        return { realChars, spam };
+    }
+
+    function updateApplyCounter() {
+        const reasonEl = document.getElementById("apply-message");
+        const counterEl = document.getElementById("apply-char-counter");
+        if (!reasonEl || !counterEl) return;
+        const stats = reasonStats(reasonEl.value);
+        if (stats.spam) {
+            counterEl.textContent = "SPAM DETECTAT";
+            counterEl.style.color = "#f87171";
+            return;
+        }
+        counterEl.textContent = `${stats.realChars} / 500`;
+        counterEl.style.color = stats.realChars >= 500 ? "#00ff88" : "#f87171";
+    }
+
+    window.onApplyReasonInput = function() {
+        updateApplyCounter();
+    };
+
     function setStatusLine(id, ok, text) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -1029,23 +1091,51 @@
 
     function renderLeaderApplications(apps) {
         const body = document.getElementById("leader-apps-body");
+        leaderAppMap = {};
         if (!apps?.length) {
             body.innerHTML = "<tr><td colspan='4' class='empty-msg'>Nicio aplicatie pending.</td></tr>";
             return;
         }
 
-        body.innerHTML = apps.map((app) => `
-            <tr>
-                <td>${fmtDate(app.created_at)}</td>
-                <td><strong>${safeHtml(app.applicant || "-")}</strong></td>
-                <td>${safeHtml(app.message || "-")}</td>
-                <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <button class="tiny-btn" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','accept')">Accepta</button>
-                    <button class="tiny-btn danger" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','reject')">Respinge</button>
-                </td>
-            </tr>
-        `).join("");
+        body.innerHTML = apps.map((app) => {
+            leaderAppMap[String(app.id || "")] = app;
+            const preview = app.preview || app.form?.reason || app.message || "-";
+            return `
+                <tr>
+                    <td>${fmtDate(app.created_at)}</td>
+                    <td><strong>${safeHtml(app.applicant || "-")}</strong></td>
+                    <td>${safeHtml(preview)}</td>
+                    <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="tiny-btn" onclick="viewFactionApplication('${encodeURIComponent(app.id)}')">CV</button>
+                        <button class="tiny-btn" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','accept')">Accepta</button>
+                        <button class="tiny-btn danger" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','reject')">Respinge</button>
+                    </td>
+                </tr>
+            `;
+        }).join("");
     }
+
+    window.viewFactionApplication = function(encodedAppId) {
+        const appId = decodeURIComponent(encodedAppId);
+        const app = leaderAppMap[appId];
+        if (!app) return;
+        const form = app.form || {};
+        const html = `
+            <div style="text-align:left;font-size:13px;line-height:1.5;">
+                <p><strong>Aplicat de:</strong> ${safeHtml(app.applicant || "-")}</p>
+                <p><strong>Nume:</strong> ${safeHtml(form.name || "-")}</p>
+                <p><strong>Varsta:</strong> ${safeHtml(String(form.age || "-"))}</p>
+                <p><strong>Descriere:</strong><br>${safeHtml(form.about || "-")}</p>
+                <p><strong>Motivatie (${safeHtml(String(form.real_chars || 0))} caractere reale):</strong><br>${safeHtml(form.reason || app.message || "-")}</p>
+            </div>
+        `;
+        Swal.fire({
+            title: "Aplicatie Factiune",
+            html,
+            width: 760,
+            confirmButtonText: "Inchide",
+        });
+    };
 
     function renderLeaderMembers(members) {
         const body = document.getElementById("leader-members-body");
@@ -1070,28 +1160,44 @@
 
     function renderApplyFactionOptions(openFactions, gameFactions) {
         const select = document.getElementById("apply-faction");
+        const openRow = document.getElementById("open-factions-row");
         if (!select) return;
+        if (!openRow) return;
         const current = select.value;
 
         if (Array.isArray(gameFactions) && gameFactions.length) {
-            const openSet = new Set(openFactions || []);
-            const options = gameFactions.map((row) => {
-                const isOpen = openSet.has(row.name);
-                const suffix = isOpen ? "" : " (Inchise)";
+            const openSet = new Set((openFactions || []).map((v) => String(v)));
+            const openOnly = gameFactions.filter((row) => openSet.has(String(row.name)));
+            const options = openOnly.map((row) => {
                 const levelReq = Number(row.level_req || 1);
-                return `<option value="${safeHtml(row.name)}" ${isOpen ? "" : "disabled"}>${safeHtml(row.name)} - Lv ${levelReq}${suffix}</option>`;
+                return `<option value="${safeHtml(row.name)}">${safeHtml(row.name)} - Lv ${levelReq}</option>`;
             }).join("");
-            select.innerHTML = `<option value="">Alege factiunea</option>${options}`;
+
+            if (openOnly.length) {
+                select.innerHTML = `<option value="">Alege factiunea</option>${options}`;
+                openRow.innerHTML = openOnly.map((row) => `<span class="badge badge-green">${safeHtml(row.name)} OPEN</span>`).join("");
+            } else {
+                select.innerHTML = `<option value="">Nicio factiune deschisa acum</option>`;
+                openRow.innerHTML = `<span class="badge badge-red">Momentan toate aplicatiile sunt inchise in joc</span>`;
+            }
         } else {
             const options = openFactions?.length
                 ? openFactions.map((faction) => `<option value="${safeHtml(faction)}">${safeHtml(faction)}</option>`).join("")
                 : "";
-            select.innerHTML = `<option value="">Alege factiunea</option>${options}`;
+            if (options) {
+                select.innerHTML = `<option value="">Alege factiunea</option>${options}`;
+                openRow.innerHTML = (openFactions || []).map((row) => `<span class="badge badge-green">${safeHtml(row)} OPEN</span>`).join("");
+            } else {
+                select.innerHTML = `<option value="">Nicio factiune deschisa acum</option>`;
+                openRow.innerHTML = `<span class="badge badge-red">Momentan toate aplicatiile sunt inchise in joc</span>`;
+            }
         }
 
-        const allowed = (openFactions || []);
+        const allowed = (openFactions || []).map((v) => String(v));
         if (current && allowed.includes(current)) {
             select.value = current;
+        } else if (allowed.length === 1) {
+            select.value = allowed[0];
         }
     }
 
@@ -1174,21 +1280,69 @@
 
     window.submitFactionApplication = async function() {
         const faction = document.getElementById("apply-faction").value.trim();
+        const nameEl = document.getElementById("apply-name");
+        const ageEl = document.getElementById("apply-age");
+        const aboutEl = document.getElementById("apply-about");
         const message = document.getElementById("apply-message").value.trim();
+        const name = sanitizeApplyName(nameEl?.value || "");
+        const age = sanitizeApplyAge(ageEl?.value || "");
+        const about = String(aboutEl?.value || "").trim();
+        const stats = reasonStats(message);
+
+        if (nameEl) nameEl.value = name;
+        if (ageEl) ageEl.value = age;
 
         if (!faction) {
             setStatusLine("apply-status", false, "Alege o factiune.");
             return;
         }
+        if (name.length < 3) {
+            setStatusLine("apply-status", false, "Numele trebuie sa aiba minim 3 litere.");
+            return;
+        }
+        if (!age) {
+            setStatusLine("apply-status", false, "Varsta este obligatorie.");
+            return;
+        }
+        const ageNum = Number(age);
+        if (ageNum < 10 || ageNum > 99) {
+            setStatusLine("apply-status", false, "Varsta trebuie sa fie intre 10 si 99.");
+            return;
+        }
+        if (about.length < 20) {
+            setStatusLine("apply-status", false, "Descrierea scurta trebuie sa aiba minim 20 caractere.");
+            return;
+        }
+        if (stats.spam) {
+            setStatusLine("apply-status", false, "Aplicatia pare spam (repetitii excesive).");
+            return;
+        }
+        if (stats.realChars < 500) {
+            setStatusLine("apply-status", false, `Aplicatia e prea scurta (${stats.realChars}/500).`);
+            return;
+        }
 
-        const data = await panelApi("submit_application", { faction, message });
+        const data = await panelApi("submit_application", {
+            faction,
+            message,
+            form: {
+                name,
+                age: ageNum,
+                about,
+                reason: message,
+            },
+        });
         if (!data.ok) {
             setStatusLine("apply-status", false, data.msg || "Nu am putut trimite aplicatia.");
             return;
         }
 
-        setStatusLine("apply-status", true, "Aplicatia a fost trimisa.");
+        setStatusLine("apply-status", true, data.msg || "Aplicatia a fost trimisa.");
+        document.getElementById("apply-name").value = "";
+        document.getElementById("apply-age").value = "";
+        document.getElementById("apply-about").value = "";
         document.getElementById("apply-message").value = "";
+        updateApplyCounter();
         await refreshFactionHub();
     };
 
@@ -1360,6 +1514,23 @@
     // Keyboard enter handlers
     document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') loginUser(); });
     document.getElementById('players-q').addEventListener('keydown', e => { if(e.key==='Enter') searchPlayers(); });
+    const applyNameInput = document.getElementById('apply-name');
+    const applyAgeInput = document.getElementById('apply-age');
+    const applyReasonInput = document.getElementById('apply-message');
+    if (applyNameInput) {
+        applyNameInput.addEventListener('input', () => {
+            applyNameInput.value = sanitizeApplyName(applyNameInput.value);
+        });
+    }
+    if (applyAgeInput) {
+        applyAgeInput.addEventListener('input', () => {
+            applyAgeInput.value = sanitizeApplyAge(applyAgeInput.value);
+        });
+    }
+    if (applyReasonInput) {
+        applyReasonInput.addEventListener('input', () => updateApplyCounter());
+    }
+    updateApplyCounter();
 
     // Secret admin shortcut — scrie 'admin' rapid pe tastatură
     let secretBuf = '';
