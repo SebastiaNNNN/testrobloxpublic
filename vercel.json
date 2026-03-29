@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/command.py", "use": "@vercel/python" },
+    { "src": "api/dashboard.py", "use": "@vercel/python" },
+    { "src": "api/player.py", "use": "@vercel/python" },
+    { "src": "api/players.py", "use": "@vercel/python" },
+    { "src": "api/factions.py", "use": "@vercel/python" },
+    { "src": "api/faction_members.py", "use": "@vercel/python" },
+    { "src": "api/houses.py", "use": "@vercel/python" },
+    { "src": "api/vehicles.py", "use": "@vercel/python" },
+    { "src": "api/logs.py", "use": "@vercel/python" },
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "*.css", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/command", "dest": "/api/command.py" },
+    { "src": "/api/dashboard", "dest": "/api/dashboard.py" },
+    { "src": "/api/player", "dest": "/api/player.py" },
+    { "src": "/api/players", "dest": "/api/players.py" },
+    { "src": "/api/factions", "dest": "/api/factions.py" },
+    { "src": "/api/faction-members", "dest": "/api/faction_members.py" },
+    { "src": "/api/houses", "dest": "/api/houses.py" },
+    { "src": "/api/vehicles", "dest": "/api/vehicles.py" },
+    { "src": "/api/logs", "dest": "/api/logs.py" },
+    { "src": "/panel", "dest": "/panel.html" },
+    { "src": "/panel-login", "dest": "/panel-login.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

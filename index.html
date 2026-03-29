@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SEVID RP - Panel Jucatori</title>
+    <meta name="description" content="Panelul oficial SEVID RP - Vezi profilul tau, factiunea, masinile si statisticile din joc.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d111a; color: #e2e8f0; min-height: 100vh; }
+
+        /* ---- SCROLLBAR ---- */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111827; }
+        ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00ff88; }
+
+        /* ---- SWAL THEME ---- */
+        .swal2-popup { background: rgba(13,17,26,0.97) !important; border: 1px solid rgba(0,255,136,0.2) !important; color: #e2e8f0 !important; border-radius: 20px !important; backdrop-filter: blur(20px); }
+        .swal2-title { color: #fff !important; font-weight: 800 !important; text-transform: uppercase; letter-spacing: 1px; }
+        .swal2-html-container { color: #94a3b8 !important; }
+        .swal2-confirm { background: linear-gradient(135deg, #00ff88, #00c2ff) !important; color: #000 !important; font-weight: 700 !important; border-radius: 10px !important; }
+        .swal2-timer-progress-bar { background: #00ff88 !important; }
+        div.swal2-container { z-index: 99999 !important; }
+
+        /* ---- LOADING ---- */
+        #loading-screen {
+            position: fixed; inset: 0; background: #0d111a; z-index: 50000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px;
+        }
+        .loader-ring {
+            width: 54px; height: 54px; border-radius: 50%;
+            border: 3px solid rgba(0,255,136,0.15);
+            border-top-color: #00ff88;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-title { font-size: 20px; font-weight: 800; letter-spacing: 3px; color: #fff; }
+        .loader-title span { color: #00ff88; }
+
+        /* ---- VERIFY OVERLAY ---- */
+        #verify-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 40000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .verify-box {
+            background: #111827; border: 1px solid rgba(0,255,136,0.3); border-radius: 24px;
+            padding: 48px 40px; max-width: 480px; width: 90%; text-align: center;
+            box-shadow: 0 0 60px rgba(0,255,136,0.08);
+        }
+        .verify-icon { font-size: 48px; margin-bottom: 16px; }
+        .verify-title { font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+        .verify-sub { color: #64748b; font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+        .code-display {
+            font-size: 28px; letter-spacing: 3px; color: #00ff88; font-weight: 800;
+            border: 2px dashed rgba(0,255,136,0.4); border-radius: 12px; padding: 16px;
+            background: rgba(0,255,136,0.04); font-family: monospace; cursor: pointer;
+            user-select: all; margin-bottom: 24px;
+        }
+        .verify-note { color: #475569; font-size: 12px; margin-bottom: 24px; }
+        .verify-actions { display: flex; gap: 12px; justify-content: center; }
+        .v-btn { padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .v-btn.primary { background: linear-gradient(135deg, #00ff88, #00c2ff); color: #000; }
+        .v-btn.secondary { background: transparent; border: 1px solid #334155; color: #94a3b8; }
+
+        /* ---- AUTH ---- */
+        #auth-container {
+            display: none; position: fixed; inset: 0; z-index: 30000;
+            justify-content: center; align-items: center;
+            background: #0d111a;
+        }
+        .auth-bg {
+            position: absolute; inset: 0; overflow: hidden;
+        }
+        .auth-blob {
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35;
+        }
+        .auth-blob.a { width: 500px; height: 500px; background: #00ff88; top: -150px; left: -150px; animation: blobmove 8s ease-in-out infinite; }
+        .auth-blob.b { width: 400px; height: 400px; background: #00c2ff; bottom: -100px; right: -100px; animation: blobmove 10s ease-in-out infinite reverse; }
+        @keyframes blobmove { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,-30px)} }
+        .auth-grid {
+            position: absolute; inset: 0;
+            background-image: linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .auth-card {
+            position: relative; z-index: 2; background: rgba(13,17,26,0.88);
+            backdrop-filter: blur(24px); border: 1px solid rgba(0,255,136,0.15);
+            border-radius: 28px; padding: 52px 44px; width: 420px; max-width: 94vw;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
+            animation: cardIn 0.5s ease;
+        }
+        @keyframes cardIn { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:none; } }
+        .auth-logo { font-size: 28px; font-weight: 900; letter-spacing: 2px; color:#fff; margin-bottom:4px; }
+        .auth-logo span { color: #00ff88; }
+        .auth-sub { font-size: 13px; color: #64748b; margin-bottom: 32px; }
+        .auth-card h2 { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 24px; display:flex; align-items:center; gap:10px; }
+        .field { margin-bottom: 16px; }
+        .field label { display:block; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; font-weight: 600; }
+        .field input {
+            width: 100%; padding: 13px 14px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
+            color: #e2e8f0; font-size: 14px; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .field input:focus { border-color: rgba(0,255,136,0.5); box-shadow: 0 0 0 3px rgba(0,255,136,0.1); }
+        .field input::placeholder { color: #475569; }
+        .auth-btn {
+            width: 100%; padding: 14px; border-radius: 13px; border: none; cursor: pointer;
+            background: linear-gradient(135deg, #00ff88, #00c2ff); color: #0d111a;
+            font-size: 14px; font-weight: 800; letter-spacing: 0.05em; margin-top: 8px;
+            transition: opacity 0.2s, transform 0.15s; text-transform: uppercase;
+        }
+        .auth-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+        .auth-toggle { margin-top: 16px; text-align: center; font-size: 13px; color: #64748b; }
+        .auth-toggle a { color: #00ff88; cursor: pointer; text-decoration: underline; }
+
+        /* ---- LAYOUT ---- */
+        #app { display: none; flex-direction: row; min-height: 100vh; }
+
+        /* ---- SIDEBAR ---- */
+        .sidebar {
+            width: 240px; background: #090d14; border-right: 1px solid rgba(255,255,255,0.06);
+            display: flex; flex-direction: column; padding: 24px 16px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar-logo { font-size: 22px; font-weight: 900; letter-spacing: 2px; color:#fff; padding: 0 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 20px; }
+        .sidebar-logo span { color: #00ff88; }
+        .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 10px 8px; margin-bottom: 16px; border-radius: 12px; background: rgba(0,255,136,0.04); border: 1px solid rgba(0,255,136,0.1); }
+        .sidebar-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #00ff88; object-fit: cover; }
+        .sidebar-username { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+        .sidebar-faction { font-size: 11px; color: #00ff88; }
+        .sidebar-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px;
+            color: #64748b; font-size: 13px; font-weight: 500; cursor: pointer;
+            transition: all 0.15s; border: 1px solid transparent;
+        }
+        .nav-item i { width: 18px; text-align: center; font-size: 14px; }
+        .nav-item:hover { background: rgba(255,255,255,0.04); color: #e2e8f0; }
+        .nav-item.active { background: rgba(0,255,136,0.1); color: #00ff88; border-color: rgba(0,255,136,0.2); }
+        .sidebar-bottom { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .logout-btn {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(239,68,68,0.2);
+            background: rgba(239,68,68,0.06); color: #f87171; font-size: 13px; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .logout-btn:hover { background: rgba(239,68,68,0.12); }
+
+        /* ---- CONTENT ---- */
+        .content { flex: 1; padding: 32px; overflow-y: auto; min-height: 100vh; }
+
+        /* ---- PAGE SECTIONS ---- */
+        .page { display: none; animation: fadeUp 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+        /* ---- PAGE HEADER ---- */
+        .page-header { margin-bottom: 28px; }
+        .page-header h1 { font-size: 28px; font-weight: 800; color: #fff; }
+        .page-header p { color: #64748b; font-size: 13px; margin-top: 4px; }
+
+        /* ---- CARDS ---- */
+        .card { background: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+        .card-title { font-size: 14px; font-weight: 700; color: #e2e8f0; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .card-title i { color: #00ff88; }
+
+        /* ---- STAT GRID ---- */
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 18px; }
+        .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+        .stat-val { font-size: 30px; font-weight: 800; color: #fff; margin-top: 6px; }
+        .stat-val.green { color: #00ff88; }
+        .stat-val.blue { color: #38bdf8; }
+
+        /* ---- TABLE ---- */
+        .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { padding: 10px 12px; text-align: left; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
+        td { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #cbd5e1; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        .clickable-row { cursor: pointer; }
+
+        /* ---- BADGE ---- */
+        .badge { display:inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+        .badge-green { background: rgba(0,255,136,0.15); color: #00ff88; }
+        .badge-blue { background: rgba(56,189,248,0.15); color: #38bdf8; }
+        .badge-orange { background: rgba(251,146,60,0.15); color: #fb923c; }
+        .badge-red { background: rgba(248,113,113,0.15); color: #f87171; }
+        .badge-gray { background: rgba(100,116,139,0.2); color: #94a3b8; }
+
+        /* ---- SEARCH BAR ---- */
+        .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+        .search-bar input { flex: 1; padding: 11px 14px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #e2e8f0; font-size: 13px; outline: none; }
+        .search-bar input:focus { border-color: rgba(0,255,136,0.4); }
+        .search-bar input::placeholder { color: #475569; }
+        .search-btn { padding: 11px 20px; border-radius: 11px; border: none; background: linear-gradient(135deg, #00ff88, #00c2ff); color: #0d111a; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+
+        /* ---- PROFILE CARD ---- */
+        .profile-hero { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .profile-avatar-big { width: 88px; height: 88px; border-radius: 16px; border: 2px solid rgba(0,255,136,0.4); object-fit: cover; background: #1e293b; flex-shrink: 0; }
+        .profile-info h2 { font-size: 22px; font-weight: 800; color: #fff; }
+        .profile-info .tag { margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .kv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 14px; }
+        .kv-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px; }
+        .kv-item .k { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+        .kv-item .v { font-size: 16px; font-weight: 700; color: #e2e8f0; margin-top: 4px; }
+
+        /* ---- FACTION GRID ---- */
+        .faction-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .faction-card-item {
+            background: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 16px;
+            cursor: pointer; transition: border-color 0.2s, transform 0.15s;
+        }
+        .faction-card-item:hover { border-color: rgba(0,255,136,0.3); transform: translateY(-2px); }
+        .faction-card-item .fname { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+        .faction-card-item .fcount { font-size: 12px; color: #64748b; }
+        .faction-card-item .fcount span { color: #00ff88; font-weight: 700; }
+
+        /* ---- LOADING PLACEHOLDER ---- */
+        .empty-msg { color: #64748b; font-size: 13px; text-align: center; padding: 32px; }
+
+        /* ---- MOBILE ---- */
+        .mobile-header { display: none; }
+        @media (max-width: 768px) {
+            #app { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); flex-direction: row; flex-wrap: wrap; padding: 14px; gap: 8px; }
+            .sidebar-logo { border: none; margin: 0; padding: 0; width: 100%; }
+            .sidebar-user { width: 100%; }
+            .sidebar-nav { flex-direction: row; flex-wrap: wrap; }
+            .sidebar-bottom { width: 100%; padding-top: 8px; border: none; }
+            .content { padding: 16px; }
+            .stat-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading-screen">
+    <div class="loader-ring"></div>
+    <div class="loader-title">SEVID<span>STUDIOS</span></div>
+</div>
+
+<!-- OVERLAY VERIFICARE -->
+<div id="verify-overlay">
+    <div class="verify-box">
+        <div class="verify-icon">⚠️</div>
+        <div class="verify-title">Cont Neverificat</div>
+        <div class="verify-sub">
+            Trebuie să confirmi că ești proprietarul contului <strong id="verify-name" style="color:#00ff88"></strong>.<br>
+            Intră pe server și scrie în chat:
+        </div>
+        <div class="code-display" id="verification-code" title="Click pentru copiere">Generare cod...</div>
+        <div class="verify-note">Ecranul dispare automat după verificare.</div>
+        <div class="verify-actions">
+            <button class="v-btn primary" onclick="activeazaVerificarea()">🔄 Cod Nou</button>
+            <button class="v-btn secondary" onclick="logoutUser()">Ieșire</button>
+        </div>
+    </div>
+</div>
+
+<!-- AUTH -->
+<div id="auth-container">
+    <div class="auth-bg">
+        <div class="auth-blob a"></div>
+        <div class="auth-blob b"></div>
+        <div class="auth-grid"></div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div class="auth-card" id="login-card">
+        <div class="auth-logo">SEVID<span>RP</span></div>
+        <div class="auth-sub">Panelul oficial al serverului</div>
+        <h2>🔐 Autentificare</h2>
+        <div class="field">
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="email@exemplu.com" autocomplete="email">
+        </div>
+        <div class="field">
+            <label>Parolă</label>
+            <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button class="auth-btn" onclick="loginUser()">Intră în cont</button>
+        <div class="auth-toggle">Nu ai cont? <a onclick="showCard('reg-card')">Înregistrează-te</a></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div class="auth-card" id="reg-card" style="display:none">
+        <div class="auth-logo">SEVID<span>RP</span></div>
+        <div class="auth-sub">Creează-ți contul gratuit</div>
+        <h2>📝 Înregistrare</h2>
+        <div class="field">
+            <label>Nume Roblox (exact)</label>
+            <input type="text" id="reg-roblox" placeholder="ex: sebyk" autocomplete="off">
+        </div>
+        <div class="field">
+            <label>Email</label>
+            <input type="email" id="reg-email" placeholder="email@exemplu.com" autocomplete="email">
+        </div>
+        <div class="field">
+            <label>Parolă</label>
+            <input type="password" id="reg-pass" placeholder="minim 6 caractere" autocomplete="new-password">
+        </div>
+        <button class="auth-btn" onclick="registerUser()">Creează Cont</button>
+        <div class="auth-toggle">Ai deja cont? <a onclick="showCard('login-card')">Loghează-te</a></div>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">SEVID<span>RP</span></div>
+        <div class="sidebar-user">
+            <img id="sb-avatar" class="sidebar-avatar" src="" alt="avatar">
+            <div>
+                <div class="sidebar-username" id="sb-username">Jucator</div>
+                <div class="sidebar-faction" id="sb-faction">Civil</div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" data-page="dash" onclick="goPage('dash')"><i class="fas fa-chart-bar"></i> Dashboard</div>
+            <div class="nav-item" data-page="profile" onclick="goPage('profile')"><i class="fas fa-user"></i> Profilul Meu</div>
+            <div class="nav-item" data-page="players" onclick="goPage('players')"><i class="fas fa-users"></i> Jucători</div>
+            <div class="nav-item" data-page="factions" onclick="goPage('factions')"><i class="fas fa-shield-alt"></i> Facțiuni</div>
+            <div class="nav-item" data-page="reports" onclick="goPage('reports')"><i class="fas fa-flag"></i> Reclamații</div>
+        </nav>
+        <div class="sidebar-bottom">
+            <button class="logout-btn" onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Deconectare</button>
+        </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+        <!-- DASHBOARD -->
+        <div class="page active" id="page-dash">
+            <div class="page-header">
+                <h1>Dashboard</h1>
+                <p>Bine ai venit pe panelul SEVID RP!</p>
+            </div>
+            <div class="stat-grid" id="dash-stats">
+                <div class="stat-card"><div class="stat-label">Jucători Înregistrați</div><div class="stat-val green" id="ds-players">—</div></div>
+                <div class="stat-card"><div class="stat-label">Facțiuni Active</div><div class="stat-val blue" id="ds-factions">—</div></div>
+                <div class="stat-card"><div class="stat-label">Banii Tăi Cash</div><div class="stat-val" id="ds-cash">—</div></div>
+                <div class="stat-card"><div class="stat-label">Banii la Bancă</div><div class="stat-val" id="ds-bank">—</div></div>
+            </div>
+            <div class="card">
+                <div class="card-title"><i class="fas fa-trophy"></i> Top Bogați</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>#</th><th>Jucător</th><th>Facțiune</th><th>Total</th></tr></thead>
+                        <tbody id="top-rich-body"><tr><td colspan="4" class="empty-msg">Se incarcă...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFIL MEU -->
+        <div class="page" id="page-profile">
+            <div class="page-header">
+                <h1>Profilul Meu</h1>
+                <p>Statisticile tale sincronizate din joc</p>
+            </div>
+            <div class="card">
+                <div class="profile-hero">
+                    <img id="prof-avatar" class="profile-avatar-big" src="" alt="avatar">
+                    <div class="profile-info">
+                        <h2 id="prof-name">—</h2>
+                        <div class="tag">
+                            <span class="badge badge-blue" id="prof-faction">Civil</span>
+                            <span class="badge badge-green" id="prof-rank-badge">Rank 0</span>
+                            <span class="badge badge-orange" id="prof-level-badge">Lv. 1</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kv-grid">
+                    <div class="kv-item"><div class="k">Cash</div><div class="v" id="p-cash">$0</div></div>
+                    <div class="kv-item"><div class="k">Bancă</div><div class="v" id="p-bank">$0</div></div>
+                    <div class="kv-item"><div class="k">Ore Jucate</div><div class="v" id="p-hours">0h</div></div>
+                    <div class="kv-item"><div class="k">RP Points</div><div class="v" id="p-rp">0</div></div>
+                    <div class="kv-item"><div class="k">Casă ID</div><div class="v" id="p-house">—</div></div>
+                    <div class="kv-item"><div class="k">Job Curent</div><div class="v" id="p-job">—</div></div>
+                    <div class="kv-item"><div class="k">Mașini</div><div class="v" id="p-cars">0</div></div>
+                    <div class="kv-item"><div class="k">Slot Garaj</div><div class="v" id="p-slots">2</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><i class="fas fa-car"></i> Garaj Personal</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Model</th><th>Nume</th><th>Culoare</th><th>KM</th><th>Status</th></tr></thead>
+                        <tbody id="my-garage"><tr><td colspan="5" class="empty-msg">Nicio mașină.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- JUCATORI -->
+        <div class="page" id="page-players">
+            <div class="page-header">
+                <h1>Jucători</h1>
+                <p>Caută orice jucător de pe server</p>
+            </div>
+            <div class="card">
+                <div class="search-bar">
+                    <input type="text" id="players-q" placeholder="Caută după nume Roblox...">
+                    <button class="search-btn" onclick="searchPlayers()"><i class="fas fa-search"></i> Caută</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Jucător</th><th>Facțiune</th><th>Rank</th><th>Level</th><th>Last Online</th></tr></thead>
+                        <tbody id="players-body"><tr><td colspan="5" class="empty-msg">Scrie un nume pentru a căuta.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Player profile popup -->
+            <div class="card" id="player-detail" style="display:none">
+                <div class="card-title"><i class="fas fa-id-card"></i> Profil: <span id="pd-name"></span></div>
+                <div class="profile-hero">
+                    <img id="pd-avatar" class="profile-avatar-big" src="" alt="">
+                    <div class="profile-info">
+                        <h2 id="pd-rp-name">—</h2>
+                        <div class="tag">
+                            <span class="badge badge-blue" id="pd-faction">Civil</span>
+                            <span class="badge badge-green" id="pd-rank">Rank 0</span>
+                            <span class="badge badge-orange" id="pd-level">Lv. 1</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="kv-grid">
+                    <div class="kv-item"><div class="k">Cash</div><div class="v" id="pd-cash">$0</div></div>
+                    <div class="kv-item"><div class="k">Bancă</div><div class="v" id="pd-bank">$0</div></div>
+                    <div class="kv-item"><div class="k">Ore Jucate</div><div class="v" id="pd-hours">0h</div></div>
+                    <div class="kv-item"><div class="k">RP Points</div><div class="v" id="pd-rp">0</div></div>
+                    <div class="kv-item"><div class="k">Mașini</div><div class="v" id="pd-cars">0</div></div>
+                    <div class="kv-item"><div class="k">Last Online</div><div class="v" id="pd-seen">—</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FACTIUNI -->
+        <div class="page" id="page-factions">
+            <div class="page-header">
+                <h1>Facțiuni</h1>
+                <p>Toate facțiunile active pe server</p>
+            </div>
+            <div class="card">
+                <div class="card-title"><i class="fas fa-layer-group"></i> Distribuție Jucători</div>
+                <div class="faction-cards" id="faction-overview">
+                    <div class="empty-msg">Se incarcă...</div>
+                </div>
+            </div>
+            <!-- Members -->
+            <div class="card" id="faction-detail" style="display:none">
+                <div class="card-title"><i class="fas fa-users"></i> Membri: <span id="fd-name" style="color:#00ff88"></span></div>
+                <div class="search-bar">
+                    <input id="faction-member-q" type="text" placeholder="Filtrează după nume...">
+                    <button class="search-btn" onclick="filterFactionMembers()"><i class="fas fa-filter"></i> Filtrare</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Jucător</th><th>Rank</th><th>Level</th><th>Cash</th><th>Last Online</th></tr></thead>
+                        <tbody id="faction-members-body"><tr><td colspan="5" class="empty-msg">Selectează o facțiune.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECLAMATII -->
+        <div class="page" id="page-reports">
+            <div class="page-header">
+                <h1>Reclamații</h1>
+                <p>Trimite o reclamație administratorilor</p>
+            </div>
+            <div class="card">
+                <div class="card-title"><i class="fas fa-flag"></i> Reclamație Nouă</div>
+                <div class="field" style="margin-bottom:14px">
+                    <label>Jucătorul reclamat</label>
+                    <input type="text" id="rep-target" placeholder="Nume exact Roblox">
+                </div>
+                <div class="field" style="margin-bottom:14px">
+                    <label>Motiv</label>
+                    <input type="text" id="rep-reason" placeholder="ex: DM fara motiv, bug abuse...">
+                </div>
+                <div class="field" style="margin-bottom:14px">
+                    <label>Descriere</label>
+                    <textarea id="rep-desc" placeholder="Descrie ce s-a intamplat..." style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;resize:vertical;min-height:100px;font-family:inherit"></textarea>
+                </div>
+                <button class="search-btn" style="width:100%;padding:14px" onclick="sendReport()"><i class="fas fa-paper-plane"></i> Trimite Reclamație</button>
+                <div id="rep-status" style="margin-top:12px;display:none"></div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+    import { getDatabase, ref, set, get, update, onValue, push } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAmKh9W10-wo7pXDNavKoy91JiA4YfM154",
+        authDomain: "projsmprobl.firebaseapp.com",
+        databaseURL: "https://projsmprobl-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "projsmprobl",
+        storageBucket: "projsmprobl.firebasestorage.app",
+        messagingSenderId: "1024885479778",
+        appId: "1:1024885479778:web:6218658e897ec928e8b43b",
+        measurementId: "G-Z7X97KJ0JG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let currentUser = null;
+    let currentRobloxName = null;
+    let allUsers = {};
+    let allFactionMembers = [];
+
+    const Toast = Swal.mixin({
+        toast: true, position: 'top-end', showConfirmButton: false,
+        timer: 3000, timerProgressBar: true, background: '#111827', color: '#e2e8f0'
+    });
+
+    function fmt(n) { return Number(n||0).toLocaleString('ro-RO'); }
+
+    // ---- NAVIGATION ----
+    window.goPage = function(page) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('page-' + page).classList.add('active');
+        document.querySelector(`[data-page="${page}"]`).classList.add('active');
+        if(page === 'factions') loadFactions();
+    }
+
+    window.showCard = function(id) {
+        document.querySelectorAll('.auth-card').forEach(c => c.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+    }
+
+    // ---- AUTH ----
+    onAuthStateChanged(auth, async (user) => {
+        const loading = document.getElementById('loading-screen');
+        if (user) {
+            currentUser = user;
+            // Fetch site user data
+            const snap = await get(ref(db, 'site_users/' + user.uid));
+            const siteData = snap.val();
+            loading.style.display = 'none';
+            document.getElementById('auth-container').style.display = 'none';
+
+            if (!siteData) {
+                // No site data, logout
+                await signOut(auth);
+                return;
+            }
+
+            if (siteData.verified === false || siteData.verified === undefined) {
+                document.getElementById('verify-overlay').style.display = 'flex';
+                document.getElementById('verify-name').innerText = siteData.robloxUsername;
+                generateVerifyCode(user.uid, siteData.robloxUsername);
+            } else {
+                document.getElementById('verify-overlay').style.display = 'none';
+                currentRobloxName = siteData.robloxUsername;
+                await loadAllUsers();
+                showApp();
+                listenMyProfile(currentRobloxName);
+                loadDashboard();
+            }
+        } else {
+            loading.style.display = 'none';
+            document.getElementById('auth-container').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+        }
+    });
+
+    async function generateVerifyCode(uid, robloxName) {
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        await set(ref(db, 'verification_codes/' + code), { uid, robloxName, ts: Date.now() });
+        const el = document.getElementById('verification-code');
+        el.innerText = '/link ' + code;
+        el.onclick = () => { navigator.clipboard?.writeText('/link ' + code); Toast.fire({ icon: 'success', title: 'Copiat!' }); };
+
+        // Listen for verification
+        const unsub = onValue(ref(db, 'site_users/' + uid + '/verified'), (snap) => {
+            if (snap.val() === true) {
+                document.getElementById('verify-overlay').style.display = 'none';
+                unsub();
+                location.reload();
+            }
+        });
+    }
+
+    async function loadAllUsers() {
+        const snap = await get(ref(db, 'users'));
+        allUsers = snap.val() || {};
+    }
+
+    function showApp() {
+        document.getElementById('app').style.display = 'flex';
+    }
+
+    function listenMyProfile(robloxName) {
+        onValue(ref(db, 'users/' + robloxName), (snap) => {
+            const d = snap.val();
+            if (!d) return;
+            const avatar = d.avatar_url || '';
+            // Sidebar
+            document.getElementById('sb-avatar').src = avatar;
+            document.getElementById('sb-username').innerText = robloxName;
+            document.getElementById('sb-faction').innerText = d.factiune || 'Civil';
+            // Profile page
+            if(avatar) { document.getElementById('prof-avatar').src = avatar; }
+            document.getElementById('prof-name').innerText = d.nume_rp || robloxName;
+            document.getElementById('prof-faction').innerText = d.factiune || 'Civil';
+            document.getElementById('prof-rank-badge').innerText = 'Rank ' + (d.rank || 0);
+            const adminLv = parseInt(d.admin||0);
+            const lvBadge = document.getElementById('prof-level-badge');
+            if (adminLv > 0) { lvBadge.textContent = '⚡ STAFF'; lvBadge.className = 'badge badge-red'; }
+            else { lvBadge.textContent = 'Lv. ' + (d.level || 1); lvBadge.className = 'badge badge-orange'; }
+            document.getElementById('p-cash').innerText = '$' + fmt(d.banii_cash);
+            document.getElementById('p-bank').innerText = '$' + fmt(d.banii_banca);
+            document.getElementById('p-hours').innerText = (d.ore_jucate || 0) + 'h';
+            document.getElementById('p-rp').innerText = fmt(d.rp);
+            document.getElementById('p-house').innerText = d.casa_detinuta > 0 ? 'ID ' + d.casa_detinuta : '—';
+            document.getElementById('p-job').innerText = d.job_curent || '—';
+            const cars = Array.isArray(d.masini) ? d.masini : [];
+            document.getElementById('p-cars').innerText = cars.length;
+            document.getElementById('p-slots').innerText = d.sloturi_garaj || 2;
+            // Garage
+            const gb = document.getElementById('my-garage');
+            gb.innerHTML = cars.length ? cars.map(c => `
+                <tr>
+                    <td>${c.model || '—'}</td><td>${c.nume || '—'}</td>
+                    <td>${c.culoare || '—'}</td><td>${(c.km||0).toLocaleString()} km</td>
+                    <td><span class="badge ${c.status==='Stored'||c.status==='Spawned'?'badge-green':'badge-red'}">${c.status||'—'}</span></td>
+                </tr>`).join('')
+                : '<tr><td colspan="5" class="empty-msg">Nicio mașină în garaj.</td></tr>';
+            // Dashboard stats
+            document.getElementById('ds-cash').innerText = '$' + fmt(d.banii_cash);
+            document.getElementById('ds-bank').innerText = '$' + fmt(d.banii_banca);
+        });
+    }
+
+    function loadDashboard() {
+        const users = Object.entries(allUsers);
+        document.getElementById('ds-players').innerText = users.length;
+        // Factions count (exclude Civil)
+        const factions = new Set(users.map(([,d]) => d.factiune).filter(f => f && f !== 'Civil'));
+        document.getElementById('ds-factions').innerText = factions.size;
+        // Top richest
+        const sorted = users
+            .map(([name, d]) => ({ name, total: (d.banii_cash||0)+(d.banii_banca||0), faction: d.factiune||'Civil' }))
+            .sort((a,b) => b.total - a.total).slice(0, 10);
+        const tb = document.getElementById('top-rich-body');
+        tb.innerHTML = sorted.length ? sorted.map((p,i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td><strong>${p.name}</strong></td>
+                <td><span class="badge badge-blue">${p.faction}</span></td>
+                <td style="color:#00ff88;font-weight:700">$${fmt(p.total)}</td>
+            </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">Nu există date.</td></tr>';
+    }
+
+    // ---- PLAYERS ----
+    window.searchPlayers = function() {
+        const q = document.getElementById('players-q').value.trim().toLowerCase();
+        const body = document.getElementById('players-body');
+        const detail = document.getElementById('player-detail');
+        detail.style.display = 'none';
+        if (!q) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Scrie un nume pentru a căuta.</td></tr>'; return; }
+        const results = Object.entries(allUsers)
+            .filter(([name, d]) => name.toLowerCase().includes(q) || (d.nume_rp||'').toLowerCase().includes(q))
+            .slice(0, 30);
+        if (!results.length) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Niciun jucător găsit.</td></tr>'; return; }
+        body.innerHTML = results.map(([name, d]) => `
+            <tr class="clickable-row" onclick="showPlayerDetail('${name}')">
+                <td><strong>${name}</strong>${d.nume_rp&&d.nume_rp!==name?' <span style="color:#64748b;font-size:11px;">(${d.nume_rp})</span>':''}</td>
+                <td><span class="badge badge-blue">${d.factiune||'Civil'}</span></td>
+                <td>${d.rank||0}</td>
+                <td>${d.level||1}</td>
+                <td style="color:#64748b">${d.last_online||'—'}</td>
+            </tr>`).join('');
+    }
+
+    window.showPlayerDetail = function(name) {
+        const d = allUsers[name];
+        if (!d) return;
+        document.getElementById('player-detail').style.display = 'block';
+        document.getElementById('pd-name').innerText = name;
+        document.getElementById('pd-avatar').src = d.avatar_url || '';
+        document.getElementById('pd-rp-name').innerText = d.nume_rp || name;
+        document.getElementById('pd-faction').innerText = d.factiune || 'Civil';
+        document.getElementById('pd-rank').innerText = 'Rank ' + (d.rank||0);
+        const pdAdm = parseInt(d.admin||0);
+        const pdLvEl = document.getElementById('pd-level');
+        if (pdAdm > 0) { pdLvEl.textContent = '⚡ STAFF'; pdLvEl.className = 'badge badge-red'; }
+        else { pdLvEl.textContent = 'Lv. ' + (d.level||1); pdLvEl.className = 'badge badge-orange'; }
+        document.getElementById('pd-cash').innerText = '$' + fmt(d.banii_cash);
+        document.getElementById('pd-bank').innerText = '$' + fmt(d.banii_banca);
+        document.getElementById('pd-hours').innerText = (d.ore_jucate||0) + 'h';
+        document.getElementById('pd-rp').innerText = fmt(d.rp);
+        const cars = Array.isArray(d.masini) ? d.masini : [];
+        document.getElementById('pd-cars').innerText = cars.length;
+        document.getElementById('pd-seen').innerText = d.last_online || '—';
+        document.getElementById('player-detail').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // ---- FACTIONS ----
+    function loadFactions() {
+        const counts = {};
+        Object.entries(allUsers).forEach(([, d]) => {
+            const f = d.factiune || 'Civil';
+            if (f === 'Civil') return; // Excludem civilii
+            counts[f] = (counts[f]||0) + 1;
+        });
+        const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+        const container = document.getElementById('faction-overview');
+        container.innerHTML = sorted.length ? sorted.map(([name, cnt]) => `
+            <div class="faction-card-item" onclick="showFactionMembers('${name.replace(/'/g,"\\'")}')">
+                <div class="fname">${name}</div>
+                <div class="fcount"><span>${cnt}</span> membri</div>
+            </div>`).join('') : '<div class="empty-msg">Nu există facțiuni active.</div>';
+    }
+
+    window.showFactionMembers = function(faction) {
+        allFactionMembers = Object.entries(allUsers)
+            .filter(([, d]) => (d.factiune||'Civil') === faction)
+            .sort((a,b) => (b[1].rank||0)-(a[1].rank||0) || (b[1].level||0)-(a[1].level||0));
+        document.getElementById('fd-name').innerText = faction;
+        document.getElementById('faction-detail').style.display = 'block';
+        renderFactionMembers(allFactionMembers);
+        document.getElementById('faction-detail').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderFactionMembers(list) {
+        const body = document.getElementById('faction-members-body');
+        body.innerHTML = list.length ? list.map(([name, d]) => {
+            const isStaff = parseInt(d.admin||0) > 0;
+            const lvCell = isStaff ? '<span class="badge badge-red">⚡ STAFF</span>' : (d.level||1);
+            return `<tr>
+                <td><strong>${name}</strong></td>
+                <td>${d.rank||0}</td>
+                <td>${lvCell}</td>
+                <td>$${fmt(d.banii_cash)}</td>
+                <td style="color:#64748b">${d.last_online||'—'}</td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="5" class="empty-msg">Niciun membru.</td></tr>';
+    }
+
+    window.filterFactionMembers = function() {
+        const q = document.getElementById('faction-member-q').value.trim().toLowerCase();
+        const filtered = q ? allFactionMembers.filter(([name,d]) => name.toLowerCase().includes(q) || (d.nume_rp||'').toLowerCase().includes(q)) : allFactionMembers;
+        renderFactionMembers(filtered);
+    }
+
+    // ---- REPORTS ----
+    window.sendReport = async function() {
+        const target = document.getElementById('rep-target').value.trim();
+        const reason = document.getElementById('rep-reason').value.trim();
+        const desc = document.getElementById('rep-desc').value.trim();
+        const st = document.getElementById('rep-status');
+        if (!target || !reason || !desc) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
+        try {
+            await push(ref(db, 'reports'), {
+                from: currentRobloxName, target, reason, desc,
+                ts: Date.now(), status: 'pending'
+            });
+            st.style.display = 'block';
+            st.innerHTML = '<span style="color:#00ff88;font-weight:700">✅ Reclamația a fost trimisă! Un admin o va verifica curând.</span>';
+            document.getElementById('rep-target').value = '';
+            document.getElementById('rep-reason').value = '';
+            document.getElementById('rep-desc').value = '';
+        } catch(e) {
+            st.style.display = 'block';
+            st.innerHTML = '<span style="color:#f87171">❌ Eroare: ' + e.message + '</span>';
+        }
+    }
+
+    // ---- AUTH ACTIONS ----
+    window.loginUser = async () => {
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-pass').value;
+        if(!email || !pass) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Eroare Login', text: e.message });
+        }
+    }
+
+    window.registerUser = async () => {
+        const robloxName = document.getElementById('reg-roblox').value.trim();
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-pass').value;
+        if(!robloxName || !email || !pass) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
+        if(!allUsers[robloxName]) {
+            Swal.fire({ icon: 'warning', title: 'Jucător Negăsit', text: `Nu există niciun jucător cu numele "${robloxName}" în Firebase. Joacă mai întâi pe server!` });
+            return;
+        }
+        try {
+            const uc = await createUserWithEmailAndPassword(auth, email, pass);
+            await set(ref(db, 'site_users/' + uc.user.uid), { robloxUsername: robloxName, email, verified: false });
+            Toast.fire({ icon: 'success', title: 'Cont creat! Verifică-ți Roblox-ul.' });
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Eroare Înregistrare', text: e.message });
+        }
+    }
+
+    window.logoutUser = () => signOut(auth).then(() => location.reload());
+
+    window.activeazaVerificarea = async function() {
+        if(!currentUser) return;
+        const snap = await get(ref(db, 'site_users/' + currentUser.uid));
+        const siteData = snap.val();
+        if(siteData) generateVerifyCode(currentUser.uid, siteData.robloxUsername);
+    }
+
+    // Keyboard enter handlers
+    document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') loginUser(); });
+    document.getElementById('players-q').addEventListener('keydown', e => { if(e.key==='Enter') searchPlayers(); });
+
+    // Secret admin shortcut — scrie 'admin' rapid pe tastatură
+    let secretBuf = '';
+    document.addEventListener('keydown', e => {
+        secretBuf += e.key.toLowerCase();
+        if (secretBuf.length > 5) secretBuf = secretBuf.slice(-5);
+        if (secretBuf === 'admin') { window.location.href = '/panel-login'; }
+    });
+</script>
+</body>
+</html>

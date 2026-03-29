@@ -1,0 +1,1241 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SEVID RP - Admin Panel</title>
+  <style>
+    :root {
+      --bg: #0b111c;
+      --panel: #131b2a;
+      --panel-2: #182134;
+      --line: #27334b;
+      --text: #eaf0fb;
+      --muted: #98a6c2;
+      --accent: #2dd4bf;
+      --accent-2: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(56,189,248,0.15), transparent 45%),
+        radial-gradient(circle at 85% 30%, rgba(45,212,191,0.12), transparent 45%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: rgba(8, 13, 22, 0.84);
+      backdrop-filter: blur(4px);
+      padding: 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .brand {
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sub {
+      margin: 4px 0 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill {
+      display: inline-block;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .nav-btn {
+      display: block;
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      text-align: left;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .nav-btn.active,
+    .nav-btn:hover {
+      border-color: var(--accent-2);
+      background: #152237;
+    }
+
+    .admin-box {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: var(--panel);
+      font-size: 13px;
+    }
+
+    .logout-btn {
+      margin-top: 10px;
+      width: 100%;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fecaca;
+      background: rgba(239, 68, 68, 0.1);
+      border-radius: 10px;
+      padding: 9px 10px;
+      cursor: pointer;
+    }
+
+    .content {
+      padding: 24px;
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .header {
+      margin-bottom: 18px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    .header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 14px;
+    }
+
+    .stat .k {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 11px;
+    }
+
+    .stat .v {
+      margin-top: 6px;
+      font-size: 26px;
+      font-weight: 800;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 10px 11px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #031018;
+    }
+
+    .btn.small { padding: 8px 10px; font-size: 12px; }
+    .btn.alt { background: #24334f; color: var(--text); border: 1px solid var(--line); }
+    .btn.danger { background: rgba(239, 68, 68, 0.14); color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.5); }
+    .btn.danger:hover { filter: brightness(1.08); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 540px;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #20324f;
+      color: #cce6ff;
+    }
+
+    .hint {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status {
+      margin-top: 10px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: rgba(24, 33, 52, 0.75);
+      font-size: 13px;
+      display: none;
+    }
+
+    .status.ok { display: block; border-color: rgba(34, 197, 94, 0.5); color: #bbf7d0; }
+    .status.err { display: block; border-color: rgba(239, 68, 68, 0.5); color: #fecaca; }
+
+    .profile-box {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #0b1628;
+      object-fit: cover;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .kv > div {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(24, 33, 52, 0.6);
+      font-size: 12px;
+    }
+
+    .kv b {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .faction-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 10px;
+    }
+
+    .faction-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(24, 33, 52, 0.6);
+      padding: 10px;
+    }
+
+    .faction-card .name {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .faction-card .members {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .preset-btn {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(24, 33, 52, 0.7);
+      color: var(--text);
+      padding: 10px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--accent-2);
+      background: rgba(30, 45, 70, 0.9);
+    }
+
+    @media (max-width: 1050px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar {
+        height: auto;
+        position: static;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .grid-4,
+      .row,
+      .row-2,
+      .kv {
+        grid-template-columns: 1fr;
+      }
+      .profile-box {
+        grid-template-columns: 1fr;
+      }
+      .avatar {
+        width: 84px;
+        height: 84px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2 class="brand">SEVID RP</h2>
+      <p class="sub">Admin Panel - Firebase + Roblox</p>
+      <div class="pill" id="session-pill">Session</div>
+
+      <button class="nav-btn active" data-page="home">Dashboard</button>
+      <button class="nav-btn" data-page="players">Jucatori</button>
+      <button class="nav-btn" data-page="factions">Factiuni</button>
+      <button class="nav-btn" data-page="houses">Case</button>
+      <button class="nav-btn" data-page="vehicles">Masini</button>
+      <button class="nav-btn" data-page="commands">Command Center</button>
+      <button class="nav-btn" data-page="logs">Logs</button>
+
+      <div class="admin-box">
+        <div style="color: var(--muted); font-size: 11px; margin-bottom: 4px;">Logat ca</div>
+        <div id="admin-name" style="font-weight: 700; font-size: 14px;"></div>
+      </div>
+      <button class="logout-btn" id="logout-btn">Deconectare</button>
+    </aside>
+
+    <main class="content">
+      <section class="page active" id="page-home">
+        <div class="header">
+          <h1>Dashboard</h1>
+          <p>Panel conectat la Firebase pentru profile live si la Roblox Messaging pentru comenzi admin.</p>
+        </div>
+
+        <div class="grid-4">
+          <div class="stat"><div class="k">Total Players</div><div class="v" id="stat-players">0</div></div>
+          <div class="stat"><div class="k">Factions</div><div class="v" id="stat-factions">0</div></div>
+          <div class="stat"><div class="k">Case Detinute</div><div class="v" id="stat-houses">0</div></div>
+          <div class="stat"><div class="k">Masini Salvate</div><div class="v" id="stat-vehicles">0</div></div>
+          <div class="stat"><div class="k">Admins</div><div class="v" id="stat-admins">0</div></div>
+        </div>
+
+        <div class="row-2" style="margin-bottom:14px;">
+          <div class="card">
+            <h2>Top Factiuni</h2>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Factiune</th><th>Membri</th></tr></thead>
+                <tbody id="top-factions-body"><tr><td colspan="3" style="color:var(--muted);text-align:center;">Se incarca...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Top Economie</h2>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Player</th><th>Total</th><th>Factiune</th></tr></thead>
+                <tbody id="top-rich-body"><tr><td colspan="4" style="color:var(--muted);text-align:center;">Se incarca...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Quick Search</h2>
+          <div class="row">
+            <div style="grid-column: span 3;">
+              <label for="quick-search">Player Name</label>
+              <input id="quick-search" type="text" placeholder="Ex: sbyk" />
+            </div>
+            <div style="align-self: end;"><button class="btn" id="quick-search-btn">Cauta profil</button></div>
+          </div>
+          <div id="quick-status" class="status" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+          <h2>Ultimele actiuni</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Ora</th><th>Actiune</th><th>Target</th><th>Status</th></tr>
+              </thead>
+              <tbody id="activity-body">
+                <tr><td colspan="4" style="color: var(--muted); text-align:center;">Nicio activitate in sesiunea curenta.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-players">
+        <div class="header">
+          <h1>Jucatori</h1>
+          <p>Cauta jucatori, vezi profilul complet, casa detinuta si masinile salvate in Firebase.</p>
+        </div>
+
+        <div class="card">
+          <h2>Search</h2>
+          <div class="row">
+            <div style="grid-column: span 3;">
+              <label for="players-query">Query</label>
+              <input id="players-query" type="text" placeholder="Nume complet sau partial" />
+            </div>
+            <div style="align-self: end;"><button class="btn" id="players-search-btn">Cauta</button></div>
+          </div>
+          <p class="hint">Selecteaza un rand din rezultate ca sa incarci profilul complet.</p>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead>
+                <tr><th>Username</th><th>Faction</th><th>Level</th><th>Cash</th><th>Cars</th><th>House</th><th>Last Online</th></tr>
+              </thead>
+              <tbody id="players-body">
+                <tr><td colspan="7" style="color: var(--muted); text-align:center;">Ruleaza o cautare.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" id="profile-card" style="display:none;">
+          <h2>Player Profile</h2>
+          <div class="profile-box">
+            <img id="profile-avatar" class="avatar" alt="avatar" />
+            <div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <h3 id="profile-name" style="margin:0;font-size:22px;"></h3>
+                <span class="tag" id="profile-faction"></span>
+              </div>
+              <div id="profile-rp" style="margin-top:4px;color:var(--muted);font-size:13px;"></div>
+
+              <div class="kv" id="profile-kv"></div>
+
+              <div class="actions">
+                <button class="btn small" id="btn-check-player">Check in game</button>
+                <button class="btn small alt" id="btn-copy-target">Set as command target</button>
+                <button class="btn small danger" id="btn-ban-player">Ban 24h</button>
+                <button class="btn small alt" id="btn-unban-player">Unban</button>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="margin:14px 0 8px;font-size:14px;">Masini detinute</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>Nume</th><th>Model</th><th>Status</th><th>KM</th><th>Culoare</th></tr>
+              </thead>
+              <tbody id="cars-body">
+                <tr><td colspan="6" style="color: var(--muted); text-align:center;">Fara masini.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-factions">
+        <div class="header">
+          <h1>Factiuni</h1>
+          <p>Distribuire jucatori + lista membri pe factiune.</p>
+        </div>
+
+        <div class="card">
+          <h2>Overview</h2>
+          <button class="btn small" id="refresh-factions-btn">Refresh</button>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead><tr><th>#</th><th>Factiune</th><th>Membri</th><th>Actiune</th></tr></thead>
+              <tbody id="faction-grid">
+                <tr><td colspan="4" style="color:var(--muted);text-align:center;">Se incarca...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Faction Members</h2>
+          <div class="row">
+            <div>
+              <label for="faction-name-input">Factiune</label>
+              <input id="faction-name-input" type="text" placeholder="Ex: Politie Romana" />
+            </div>
+            <div style="grid-column: span 2;">
+              <label for="faction-member-query">Filtru username</label>
+              <input id="faction-member-query" type="text" placeholder="optional" />
+            </div>
+            <div style="align-self:end;"><button class="btn" id="faction-members-btn">Incarca membri</button></div>
+          </div>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead><tr><th>Username</th><th>Rank</th><th>Level</th><th>Cash</th><th>Cars</th><th>Last Online</th></tr></thead>
+              <tbody id="faction-members-body">
+                <tr><td colspan="6" style="color:var(--muted);text-align:center;">Alege o factiune.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-houses">
+        <div class="header">
+          <h1>Case</h1>
+          <p>Lista proprietari case bazata pe datele din Firebase.</p>
+        </div>
+
+        <div class="card">
+          <h2>Search Houses</h2>
+          <div class="row">
+            <div style="grid-column: span 3;">
+              <label for="houses-query">Query</label>
+              <input id="houses-query" type="text" placeholder="House ID sau username" />
+            </div>
+            <div style="align-self:end;"><button class="btn" id="houses-search-btn">Search</button></div>
+          </div>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead><tr><th>House ID</th><th>Owner</th><th>RP Name</th><th>Factiune</th><th>Cash</th><th>Bank</th><th>Last Online</th></tr></thead>
+              <tbody id="houses-body">
+                <tr><td colspan="7" style="color:var(--muted);text-align:center;">Se incarca...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-vehicles">
+        <div class="header">
+          <h1>Masini</h1>
+          <p>Index global masini salvate in Firebase.</p>
+        </div>
+
+        <div class="card">
+          <h2>Search Vehicles</h2>
+          <div class="row-2">
+            <div>
+              <label for="vehicles-model-query">Model query</label>
+              <input id="vehicles-model-query" type="text" placeholder="Ex: Dacia, BMW" />
+            </div>
+            <div>
+              <label for="vehicles-owner-query">Owner query</label>
+              <input id="vehicles-owner-query" type="text" placeholder="username owner" />
+            </div>
+          </div>
+          <div style="margin-top:10px;"><button class="btn" id="vehicles-search-btn">Search</button></div>
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead><tr><th>Owner</th><th>Factiune</th><th>Model</th><th>Name</th><th>Status</th><th>KM</th><th>Culoare</th></tr></thead>
+              <tbody id="vehicles-body">
+                <tr><td colspan="7" style="color:var(--muted);text-align:center;">Se incarca...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-commands">
+        <div class="header">
+          <h1>Command Center</h1>
+          <p>Trimite comenzi catre joc prin Roblox Messaging Service.</p>
+        </div>
+
+        <div class="card">
+          <h2>Send Command</h2>
+          <div class="row-2">
+            <div>
+              <label for="cmd-type">Type</label>
+              <select id="cmd-type">
+                <option value="Check">Check</option>
+                <option value="Cash">Cash</option>
+                <option value="Scrap">Scrap</option>
+                <option value="CourierXP">CourierXP</option>
+                <option value="Car">Car</option>
+                <option value="RemoveCar">RemoveCar</option>
+                <option value="SetFaction">SetFaction</option>
+                <option value="SetAdmin">SetAdmin</option>
+                <option value="Ban">Ban</option>
+                <option value="Unban">Unban</option>
+                <option value="House">House</option>
+                <option value="Stock">Stock</option>
+                <option value="CheckStock">CheckStock</option>
+                <option value="CheckHouses">CheckHouses</option>
+                <option value="CheckReports">CheckReports</option>
+              </select>
+            </div>
+            <div>
+              <label for="cmd-target">Target</label>
+              <input id="cmd-target" type="text" placeholder="Username / HouseID / CarID" />
+            </div>
+            <div>
+              <label for="cmd-value">Value</label>
+              <input id="cmd-value" type="text" placeholder="Ex: 10000, DaciaPapuc, Politie Romana" />
+            </div>
+            <div>
+              <label for="cmd-reason">Reason</label>
+              <input id="cmd-reason" type="text" placeholder="Ex: Admin panel" />
+            </div>
+          </div>
+          <div class="preset-grid">
+            <button class="preset-btn" data-type="Check" data-value="0" data-reason="Routine check" data-fill-target="selected">Preset: Check selected</button>
+            <button class="preset-btn" data-type="Ban" data-value="24h" data-reason="Regulament incalcat" data-fill-target="selected">Preset: Ban 24h selected</button>
+            <button class="preset-btn" data-type="Unban" data-value="0" data-reason="Ban ridicat" data-fill-target="selected">Preset: Unban selected</button>
+            <button class="preset-btn" data-type="Cash" data-value="10000" data-reason="Reward event" data-fill-target="selected">Preset: Cash bonus +10k</button>
+            <button class="preset-btn" data-type="SetAdmin" data-value="1" data-reason="Promovare helper" data-fill-target="selected">Preset: Set admin level 1</button>
+            <button class="preset-btn" data-type="SetFaction" data-value="Politie Romana" data-reason="1" data-fill-target="selected">Preset: Set faction rank 1</button>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" id="send-command-btn">Trimite comanda</button>
+            <button class="btn alt" id="clear-command-btn">Goleste</button>
+          </div>
+          <div id="command-status" class="status" style="display:none;"></div>
+          <p class="hint">SetFaction: `Target` = username, `Value` = faction name, `Reason` = rank (1-5).</p>
+        </div>
+      </section>
+
+      <section class="page" id="page-logs">
+        <div class="header">
+          <h1>Logs</h1>
+          <p>Istoric actiuni panel (comenzi + notite manuale).</p>
+        </div>
+        <div class="card">
+          <h2>Activity Logs</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <button class="btn" id="refresh-logs-btn">Refresh</button>
+            <button class="btn alt" id="add-log-note-btn">Adauga Notita</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Time</th><th>Admin</th><th>Event</th><th>Target</th><th>Status</th><th>Message</th></tr></thead>
+              <tbody id="logs-body">
+                <tr><td colspan="6" style="color:var(--muted);text-align:center;">Se incarca...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      adminName: sessionStorage.getItem("adminName") || "",
+      adminKey: sessionStorage.getItem("adminKey") || "",
+      selectedPlayer: null,
+      selectedFaction: "",
+    };
+
+    if (!state.adminName || !state.adminKey) {
+      window.location.href = "/panel-login";
+    }
+
+    document.getElementById("admin-name").textContent = state.adminName;
+    document.getElementById("session-pill").textContent = "Session: " + state.adminName;
+
+    function formatNumber(value) {
+      const number = Number(value || 0);
+      return Number.isNaN(number) ? "0" : number.toLocaleString("ro-RO");
+    }
+
+    function formatTs(ts) {
+      if (!ts) return "-";
+      const d = new Date(Number(ts) * 1000);
+      return Number.isNaN(d.getTime()) ? "-" : d.toLocaleString("ro-RO");
+    }
+
+    function setStatus(el, ok, message) {
+      el.className = "status " + (ok ? "ok" : "err");
+      el.textContent = message;
+    }
+
+    function setSelected(username) {
+      state.selectedPlayer = username || null;
+      if (state.selectedPlayer) {
+        document.getElementById("cmd-target").value = state.selectedPlayer;
+      }
+    }
+
+    function applyCommandPreset(type, value, reason, useSelectedTarget) {
+      document.getElementById("cmd-type").value = type || "Check";
+      document.getElementById("cmd-value").value = value || "0";
+      document.getElementById("cmd-reason").value = reason || "Admin Panel";
+
+      if (useSelectedTarget && state.selectedPlayer) {
+        document.getElementById("cmd-target").value = state.selectedPlayer;
+      }
+
+      const status = document.getElementById("command-status");
+      if (useSelectedTarget && !state.selectedPlayer) {
+        setStatus(status, false, "Preset incarcat, dar nu ai jucator selectat pentru target.");
+      } else {
+        setStatus(status, true, "Preset incarcat. Verifica target-ul si trimite comanda.");
+      }
+
+      showPage("commands");
+    }
+
+    async function apiPost(path, payload = {}) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, adminKey: state.adminKey, adminName: state.adminName }),
+      });
+
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = { ok: false, msg: "Raspuns API invalid" };
+      }
+      return data;
+    }
+
+    function addActivity(action, target, ok) {
+      const body = document.getElementById("activity-body");
+      if (body.children.length === 1 && body.textContent.includes("Nicio activitate")) {
+        body.innerHTML = "";
+      }
+
+      const row = document.createElement("tr");
+      const time = new Date().toLocaleTimeString("ro-RO");
+      row.innerHTML = `<td>${time}</td><td>${action}</td><td>${target}</td><td>${ok ? "OK" : "ERR"}</td>`;
+      body.prepend(row);
+
+      while (body.children.length > 25) {
+        body.removeChild(body.lastChild);
+      }
+    }
+
+    async function loadDashboard() {
+      const data = await apiPost("/api/dashboard");
+      if (!data.ok) return;
+
+      const totals = data.totals || {};
+      document.getElementById("stat-players").textContent = formatNumber(totals.players || 0);
+      document.getElementById("stat-factions").textContent = formatNumber(totals.factions || 0);
+      document.getElementById("stat-houses").textContent = formatNumber(totals.houses || 0);
+      document.getElementById("stat-vehicles").textContent = formatNumber(totals.vehicles || 0);
+      document.getElementById("stat-admins").textContent = formatNumber(totals.admins || 0);
+
+      const topFactions = data.top_factions || [];
+      const factionsBody = document.getElementById("top-factions-body");
+      factionsBody.innerHTML = topFactions.length
+        ? topFactions.map((f, i) => `<tr><td>${i + 1}</td><td>${f.name}</td><td>${formatNumber(f.members)}</td></tr>`).join("")
+        : "<tr><td colspan='3' style='color:var(--muted);text-align:center;'>Nu exista date.</td></tr>";
+
+      const richest = data.richest || [];
+      const richBody = document.getElementById("top-rich-body");
+      richBody.innerHTML = richest.length
+        ? richest.map((p, i) => `<tr><td>${i + 1}</td><td>${p.username}</td><td>${formatNumber(p.total)}</td><td>${p.faction || "Civil"}</td></tr>`).join("")
+        : "<tr><td colspan='4' style='color:var(--muted);text-align:center;'>Nu exista date.</td></tr>";
+    }
+
+    async function loadFactions() {
+      const body = document.getElementById("faction-grid");
+      const data = await apiPost("/api/factions", {});
+      if (!data.ok) {
+        body.innerHTML = `<tr><td colspan='4' style='color:#fecaca;text-align:center;'>${data.msg || "Eroare"}</td></tr>`;
+        return;
+      }
+
+      const rows = data.factions || [];
+      body.innerHTML = rows.length
+        ? rows.map((f, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${f.name}</td>
+            <td>${formatNumber(f.members)}</td>
+            <td><button class="btn small alt" data-load-faction="${f.name}">Load Members</button></td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='4' style='color:var(--muted);text-align:center;'>Nu exista factiuni.</td></tr>";
+
+      body.querySelectorAll("button[data-load-faction]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const name = btn.dataset.loadFaction || "";
+          document.getElementById("faction-name-input").value = name;
+          state.selectedFaction = name;
+          loadFactionMembers();
+        });
+      });
+    }
+
+    async function loadFactionMembers() {
+      const faction = document.getElementById("faction-name-input").value.trim();
+      const query = document.getElementById("faction-member-query").value.trim();
+      const body = document.getElementById("faction-members-body");
+
+      if (!faction) {
+        body.innerHTML = "<tr><td colspan='6' style='color:var(--muted);text-align:center;'>Introdu numele factiunii.</td></tr>";
+        return;
+      }
+
+      state.selectedFaction = faction;
+      const data = await apiPost("/api/faction-members", { faction, query, limit: 120 });
+      if (!data.ok) {
+        body.innerHTML = `<tr><td colspan='6' style='color:#fecaca;text-align:center;'>${data.msg || "Eroare"}</td></tr>`;
+        return;
+      }
+
+      const members = data.members || [];
+      body.innerHTML = members.length
+        ? members.map((m) => `
+          <tr>
+            <td>${m.username}</td>
+            <td>${m.rank || 0}</td>
+            <td>${m.level || 0}</td>
+            <td>${formatNumber(m.cash || 0)}</td>
+            <td>${m.cars_count || 0}</td>
+            <td>${m.last_online || "-"}</td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='6' style='color:var(--muted);text-align:center;'>Niciun membru gasit.</td></tr>";
+    }
+
+    function renderPlayers(users) {
+      const body = document.getElementById("players-body");
+      if (!users.length) {
+        body.innerHTML = "<tr><td colspan='7' style='color:var(--muted);text-align:center;'>Niciun rezultat.</td></tr>";
+        return;
+      }
+
+      body.innerHTML = users.map((u) => `
+        <tr>
+          <td><button class="btn small alt" data-load="${u.username}">${u.username}</button></td>
+          <td>${u.faction || "Civil"}</td>
+          <td>${u.level || 0}</td>
+          <td>${formatNumber(u.cash || 0)}</td>
+          <td>${u.cars_count || 0}</td>
+          <td>${(u.house_owned || 0) > 0 ? "#" + u.house_owned : "-"}</td>
+          <td>${u.last_online || "-"}</td>
+        </tr>
+      `).join("");
+
+      body.querySelectorAll("button[data-load]").forEach((button) => {
+        button.addEventListener("click", () => loadPlayer(button.dataset.load));
+      });
+    }
+
+    async function searchPlayers(query) {
+      const data = await apiPost("/api/players", { query, limit: 60 });
+      if (!data.ok) {
+        renderPlayers([]);
+        return;
+      }
+      renderPlayers(data.users || []);
+    }
+
+    function renderProfile(player) {
+      const card = document.getElementById("profile-card");
+      const avatar = document.getElementById("profile-avatar");
+      const name = document.getElementById("profile-name");
+      const rp = document.getElementById("profile-rp");
+      const faction = document.getElementById("profile-faction");
+      const kv = document.getElementById("profile-kv");
+      const carsBody = document.getElementById("cars-body");
+
+      card.style.display = "block";
+      name.textContent = player.username;
+      rp.textContent = "RP Name: " + (player.rp_name || player.username);
+      faction.textContent = `${player.faction || "Civil"} / Rank ${player.rank || 0}`;
+      avatar.src = player.avatar_url || "https://placehold.co/96x96/0b1628/cbd5e1?text=RP";
+
+      kv.innerHTML = `
+        <div><b>Level</b>${player.level || 0}</div>
+        <div><b>RP</b>${player.rp || 0}</div>
+        <div><b>Job</b>${player.job || "None"}</div>
+        <div><b>Cash</b>${formatNumber(player.cash || 0)}</div>
+        <div><b>Bank</b>${formatNumber(player.bank || 0)}</div>
+        <div><b>Hours</b>${player.hours || 0}</div>
+        <div><b>Admin</b>${player.admin_level || 0}</div>
+        <div><b>House</b>${(player.house_owned || 0) > 0 ? "#" + player.house_owned : "Nu are"}</div>
+        <div><b>Garage Slots</b>${player.garage_slots || 0}</div>
+        <div><b>Cars Count</b>${player.cars_count || 0}</div>
+        <div><b>Last Online</b>${player.last_online || "-"}</div>
+      `;
+
+      const cars = Array.isArray(player.cars) ? player.cars : [];
+      carsBody.innerHTML = cars.length
+        ? cars.map((car, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${car.nume || "-"}</td>
+            <td>${car.model || "-"}</td>
+            <td>${car.status || "-"}</td>
+            <td>${car.km || 0}</td>
+            <td>${car.culoare || "-"}</td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='6' style='color:var(--muted);text-align:center;'>Fara masini.</td></tr>";
+
+      setSelected(player.username);
+    }
+
+    async function loadPlayer(username) {
+      const data = await apiPost("/api/player", { username });
+      if (!data.ok) {
+        const msg = data.msg || "Player not found";
+        const suggestions = (data.suggestions || []).map((x) => x.username).join(", ");
+        alert(suggestions ? `${msg}. Sugestii: ${suggestions}` : msg);
+        return;
+      }
+
+      renderProfile(data.player);
+      addActivity("LoadProfile", data.player.username, true);
+      showPage("players");
+    }
+
+    async function loadHouses(query = "") {
+      const body = document.getElementById("houses-body");
+      const data = await apiPost("/api/houses", { query, limit: 250 });
+      if (!data.ok) {
+        body.innerHTML = `<tr><td colspan='7' style='color:#fecaca;text-align:center;'>${data.msg || "Eroare"}</td></tr>`;
+        return;
+      }
+
+      const houses = data.houses || [];
+      body.innerHTML = houses.length
+        ? houses.map((h) => `
+          <tr>
+            <td>#${h.house_id}</td>
+            <td>${h.owner}</td>
+            <td>${h.rp_name || h.owner}</td>
+            <td>${h.faction || "Civil"}</td>
+            <td>${formatNumber(h.cash || 0)}</td>
+            <td>${formatNumber(h.bank || 0)}</td>
+            <td>${h.last_online || "-"}</td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='7' style='color:var(--muted);text-align:center;'>Nu exista case detinute.</td></tr>";
+    }
+
+    async function loadVehicles() {
+      const model = document.getElementById("vehicles-model-query").value.trim();
+      const owner = document.getElementById("vehicles-owner-query").value.trim();
+      const body = document.getElementById("vehicles-body");
+      const data = await apiPost("/api/vehicles", { model, owner, limit: 350 });
+      if (!data.ok) {
+        body.innerHTML = `<tr><td colspan='7' style='color:#fecaca;text-align:center;'>${data.msg || "Eroare"}</td></tr>`;
+        return;
+      }
+
+      const vehicles = data.vehicles || [];
+      body.innerHTML = vehicles.length
+        ? vehicles.map((v) => `
+          <tr>
+            <td>${v.owner}</td>
+            <td>${v.owner_faction || "Civil"}</td>
+            <td>${v.model || "-"}</td>
+            <td>${v.name || "-"}</td>
+            <td>${v.status || "-"}</td>
+            <td>${v.km || 0}</td>
+            <td>${v.color || "-"}</td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='7' style='color:var(--muted);text-align:center;'>Niciun vehicul gasit.</td></tr>";
+    }
+
+    async function loadLogs() {
+      const body = document.getElementById("logs-body");
+      const data = await apiPost("/api/logs", { action: "list", limit: 150 });
+      if (!data.ok) {
+        body.innerHTML = `<tr><td colspan='6' style='color:#fecaca;text-align:center;'>${data.msg || "Eroare"}</td></tr>`;
+        return;
+      }
+
+      const logs = data.logs || [];
+      body.innerHTML = logs.length
+        ? logs.map((log) => `
+          <tr>
+            <td>${formatTs(log.ts)}</td>
+            <td>${log.admin || "-"}</td>
+            <td>${log.event_type || "-"}</td>
+            <td>${log.target || "-"}</td>
+            <td>${log.status || "INFO"}</td>
+            <td>${log.message || "-"}</td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='6' style='color:var(--muted);text-align:center;'>Fara loguri.</td></tr>";
+    }
+
+    async function addManualLog() {
+      const message = prompt("Introdu notita pentru log:");
+      if (!message) return;
+      await apiPost("/api/logs", {
+        action: "add",
+        event_type: "ManualNote",
+        target: state.selectedPlayer || "-",
+        status: "INFO",
+        message,
+      });
+      loadLogs();
+    }
+
+    async function sendCommand() {
+      const type = document.getElementById("cmd-type").value;
+      const target = document.getElementById("cmd-target").value.trim();
+      const value = document.getElementById("cmd-value").value.trim() || "0";
+      const reason = document.getElementById("cmd-reason").value.trim() || "Admin Panel";
+      const status = document.getElementById("command-status");
+
+      if (!type || !target) {
+        setStatus(status, false, "Type si target sunt obligatorii.");
+        return;
+      }
+
+      const data = await apiPost("/api/command", { type, target, value, reason });
+      const ok = !!data.ok;
+      setStatus(status, ok, data.msg || data.message || (ok ? "Comanda trimisa" : "Eroare"));
+      addActivity(type, target, ok);
+      loadDashboard();
+      loadLogs();
+
+      // Golim campurile automat dupa trimitere
+      if (ok) {
+        document.getElementById("cmd-target").value = "";
+        document.getElementById("cmd-value").value = "";
+        document.getElementById("cmd-reason").value = "";
+      }
+    }
+
+
+    function showPage(pageName) {
+      document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+      document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+      document.getElementById("page-" + pageName).classList.add("active");
+      document.querySelector(`.nav-btn[data-page='${pageName}']`)?.classList.add("active");
+    }
+
+    document.querySelectorAll(".nav-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        showPage(button.dataset.page);
+        if (button.dataset.page === "logs") {
+          loadLogs();
+        }
+      });
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      sessionStorage.clear();
+      window.location.href = "/panel-login";
+    });
+
+    document.getElementById("quick-search-btn").addEventListener("click", async () => {
+      const username = document.getElementById("quick-search").value.trim();
+      const box = document.getElementById("quick-status");
+      if (!username) {
+        setStatus(box, false, "Introdu un username.");
+        return;
+      }
+      const data = await apiPost("/api/player", { username });
+      if (data.ok) {
+        setStatus(box, true, `Profil incarcat pentru ${data.player.username}.`);
+        renderProfile(data.player);
+        addActivity("QuickSearch", data.player.username, true);
+        showPage("players");
+      } else {
+        setStatus(box, false, data.msg || "Player negasit.");
+      }
+    });
+
+    document.getElementById("players-search-btn").addEventListener("click", () => {
+      searchPlayers(document.getElementById("players-query").value.trim());
+    });
+
+    document.getElementById("players-query").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        searchPlayers(document.getElementById("players-query").value.trim());
+      }
+    });
+
+    document.getElementById("refresh-factions-btn").addEventListener("click", loadFactions);
+    document.getElementById("faction-members-btn").addEventListener("click", loadFactionMembers);
+    document.getElementById("houses-search-btn").addEventListener("click", () => {
+      loadHouses(document.getElementById("houses-query").value.trim());
+    });
+    document.getElementById("vehicles-search-btn").addEventListener("click", loadVehicles);
+    document.getElementById("send-command-btn").addEventListener("click", sendCommand);
+
+    document.getElementById("clear-command-btn").addEventListener("click", () => {
+      document.getElementById("cmd-target").value = "";
+      document.getElementById("cmd-value").value = "";
+      document.getElementById("cmd-reason").value = "";
+      const status = document.getElementById("command-status");
+      status.className = "status";
+      status.textContent = "";
+    });
+
+    document.getElementById("btn-check-player").addEventListener("click", () => {
+      if (!state.selectedPlayer) return;
+      applyCommandPreset("Check", "0", "Check", true);
+    });
+
+    document.getElementById("btn-copy-target").addEventListener("click", () => {
+      if (!state.selectedPlayer) return;
+      document.getElementById("cmd-target").value = state.selectedPlayer;
+      showPage("commands");
+    });
+
+    document.getElementById("btn-ban-player").addEventListener("click", () => {
+      if (!state.selectedPlayer) return;
+      applyCommandPreset("Ban", "24h", "Regulament incalcat", true);
+    });
+
+    document.getElementById("btn-unban-player").addEventListener("click", () => {
+      if (!state.selectedPlayer) return;
+      applyCommandPreset("Unban", "0", "Ban ridicat", true);
+    });
+
+    document.querySelectorAll(".preset-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        applyCommandPreset(
+          button.dataset.type || "Check",
+          button.dataset.value || "0",
+          button.dataset.reason || "Admin Panel",
+          button.dataset.fillTarget === "selected"
+        );
+      });
+    });
+
+    document.getElementById("refresh-logs-btn").addEventListener("click", loadLogs);
+    document.getElementById("add-log-note-btn").addEventListener("click", addManualLog);
+
+    (async function bootstrap() {
+      await Promise.all([
+        loadDashboard(),
+        loadFactions(),
+        searchPlayers(""),
+        loadHouses(""),
+        loadVehicles(),
+        loadLogs(),
+      ]);
+    })();
+  </script>
+</body>
+</html>
