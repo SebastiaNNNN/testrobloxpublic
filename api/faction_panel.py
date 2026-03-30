@@ -82,6 +82,30 @@ def _extract_block(text: str, opening_brace_index: int):
     return "", -1
 
 
+def _parse_rank_rows(block_text: str):
+    ranks = {}
+    cursor = 0
+    while cursor < len(block_text):
+        rank_match = re.search(r"\[(\d+)\]\s*=\s*\{", block_text[cursor:])
+        if not rank_match:
+            break
+        rank_no = int(rank_match.group(1))
+        block_open = cursor + rank_match.end() - 1
+        rank_body, rank_end = _extract_block(block_text, block_open)
+        if rank_end < 0:
+            break
+        title_match = re.search(r'Title\s*=\s*"([^"]+)"', rank_body)
+        salary_match = re.search(r"Salary\s*=\s*(\d+)", rank_body)
+        leader_match = re.search(r"IsLeader\s*=\s*(true|false)", rank_body, flags=re.IGNORECASE)
+        ranks[rank_no] = {
+            "title": title_match.group(1).strip() if title_match else f"Rank {rank_no}",
+            "salary": int(salary_match.group(1)) if salary_match else 0,
+            "is_leader": bool(leader_match and leader_match.group(1).lower() == "true"),
+        }
+        cursor = rank_end + 1
+    return ranks
+
+
 def _parse_game_factions():
     now = int(time.time())
     if _FACTION_CONFIG_CACHE["data"] and now - _FACTION_CONFIG_CACHE["ts"] < 30:
@@ -131,6 +155,13 @@ def _parse_game_factions():
         level_match = re.search(r"LevelReq\s*=\s*(\d+)", block_content)
         max_match = re.search(r"MaxMembers\s*=\s*(\d+)", block_content)
         apps_match = re.search(r"AppsOpen\s*=\s*(true|false)", block_content, flags=re.IGNORECASE)
+        ranks_match = re.search(r"Ranks\s*=\s*\{", block_content)
+        ranks = {}
+        if ranks_match:
+            ranks_open = block_content.find("{", ranks_match.start())
+            rank_block, rank_end = _extract_block(block_content, ranks_open)
+            if rank_end >= 0:
+                ranks = _parse_rank_rows(rank_block)
 
         rows.append(
             {
@@ -138,6 +169,7 @@ def _parse_game_factions():
                 "level_req": int(level_match.group(1)) if level_match else 1,
                 "max_members": int(max_match.group(1)) if max_match else 0,
                 "apps_open": bool(apps_match and apps_match.group(1).lower() == "true"),
+                "ranks": ranks,
             }
         )
 
@@ -190,6 +222,20 @@ def _flatten_collection(rows_raw) -> list[dict]:
         row["id"] = str(row_id)
         rows.append(row)
     rows.sort(key=lambda item: item.get("ts", item.get("created_at", 0)), reverse=True)
+    return rows
+
+
+def _flatten_warn_history(rows_raw) -> list[dict]:
+    rows = []
+    for target_name, warn_rows in _as_dict(rows_raw).items():
+        for warn_id, warn_data in _as_dict(warn_rows).items():
+            if not isinstance(warn_data, dict):
+                continue
+            row = dict(warn_data)
+            row["id"] = str(warn_id)
+            row["target"] = str(target_name)
+            rows.append(row)
+    rows.sort(key=lambda item: item.get("ts", 0), reverse=True)
     return rows
 
 
@@ -389,9 +435,12 @@ def _handle_list_hub(identity: dict, users: dict):
     leader_pending = []
     leader_members = []
     leader_logs = []
+    leader_warn_history = []
     leader_names = []
     leader_overview = {}
     if is_leader:
+        faction_cfg = next((row for row in game_factions if row["name"] == my_faction), {})
+        rank_cfg = faction_cfg.get("ranks") if isinstance(faction_cfg.get("ranks"), dict) else {}
         users_by_name = {str(name): _as_dict(data) for name, data in users.items()}
         leader_pending = [
             dict(app)
@@ -415,6 +464,7 @@ def _handle_list_hub(identity: dict, users: dict):
                 {
                     "username": member_name,
                     "rank": parse_int(member.get("rank", 0), 0),
+                    "rank_title": _as_dict(rank_cfg.get(parse_int(member.get("rank", 0), 0))).get("title", f"Rank {parse_int(member.get('rank', 0), 0)}"),
                     "level": parse_int(member.get("level", 1), 1),
                     "cash": parse_int(member.get("banii_cash", 0), 0),
                     "warns_total": parse_int(member.get("faction_warns_total", 0), 0),
@@ -441,6 +491,13 @@ def _handle_list_hub(identity: dict, users: dict):
             for row in _flatten_collection(logs_raw)
             if str(row.get("faction", "")) == my_faction
         ][:40]
+
+        warns_raw = firebase_get("panel/faction_warns", auth_token=auth_token)[1]
+        leader_warn_history = [
+            row
+            for row in _flatten_warn_history(warns_raw)
+            if str(row.get("faction", "")) == my_faction
+        ][:120]
 
         total_warns = sum(parse_int(row.get("warns_total", 0), 0) for row in leader_members)
         leader_overview = {
@@ -482,6 +539,7 @@ def _handle_list_hub(identity: dict, users: dict):
         "leader_pending_apps": leader_pending,
         "leader_members": leader_members,
         "leader_logs": leader_logs,
+        "leader_warn_history": leader_warn_history,
         "leader_names": leader_names,
         "leader_overview": leader_overview,
         "shop_history": history[:40],
@@ -581,6 +639,14 @@ def _handle_submit_application(identity: dict, users: dict, body: dict):
     if not ok:
         return {"ok": False, "msg": err}
 
+    _log_faction_event(
+        faction,
+        username,
+        username,
+        "application_submitted",
+        auth_token=auth_token,
+        note=preview,
+    )
     return {"ok": True, "msg": f"Aplicatia a fost trimisa ({real_chars} caractere reale)."}
 
 
@@ -722,6 +788,13 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
         )
         if not ok_app:
             return {"ok": False, "msg": err_app}
+        _log_faction_event(
+            faction,
+            username,
+            username,
+            "invite_declined",
+            auth_token=auth_token,
+        )
         return {"ok": True, "msg": "Ai refuzat invitatia."}
 
     if status != "rejected":
@@ -734,6 +807,13 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
     )
     if not ok_app:
         return {"ok": False, "msg": err_app}
+    _log_faction_event(
+        faction,
+        username,
+        username,
+        "application_archived",
+        auth_token=auth_token,
+    )
     return {"ok": True, "msg": "Aplicatia respinsa a fost mutata in istoric."}
 
 

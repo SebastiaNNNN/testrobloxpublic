@@ -833,13 +833,30 @@
                     </div>
 
                     <div class="leader-pane">
-                        <div class="card-title" style="margin-bottom:10px"><i class="fas fa-timeline"></i> Faction Logs</div>
-                        <div class="table-wrap">
-                            <table>
-                                <thead><tr><th>Data</th><th>Eveniment</th><th>Actor</th><th>Target</th><th>Detalii</th></tr></thead>
-                                <tbody id="leader-logs-body"><tr><td colspan="5" class="empty-msg">Nu exista loguri inca.</td></tr></tbody>
-                            </table>
+                        <div class="card-title" style="margin-bottom:10px"><i class="fas fa-user-gear"></i> Member Dossier</div>
+                        <div id="leader-member-detail" class="leader-detail-card">
+                            <div class="empty-panel">Alege un membru din stanga ca sa vezi rank-ul real, warns si istoricul lui recent.</div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="leader-pane" style="margin-top:14px">
+                    <div class="card-title" style="margin-bottom:10px"><i class="fas fa-timeline"></i> Faction History</div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Data</th><th>Eveniment</th><th>Actor</th><th>Target</th><th>Detalii</th></tr></thead>
+                            <tbody id="leader-logs-body"><tr><td colspan="5" class="empty-msg">Nu exista loguri inca.</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="leader-pane" style="margin-top:14px">
+                    <div class="card-title" style="margin-bottom:10px"><i class="fas fa-triangle-exclamation"></i> Warn History</div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Data</th><th>Membru</th><th>De la</th><th>Motiv</th></tr></thead>
+                            <tbody id="leader-warns-body"><tr><td colspan="4" class="empty-msg">Nu exista warns inca.</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -929,7 +946,9 @@
     let leaderPendingApps = [];
     let leaderMembersRaw = [];
     let leaderLogsRaw = [];
+    let leaderWarnsRaw = [];
     let selectedLeaderAppId = "";
+    let selectedLeaderMember = "";
     let factionHubInterval = null;
     let currentProfileData = null;
     let selectedGarageCarIndex = 0;
@@ -2000,6 +2019,12 @@
             : `<span class="badge badge-gray">Niciun leader sincronizat separat.</span>`;
     }
 
+    function leaderRankLabel(member) {
+        const title = String(member?.rank_title || "").trim();
+        const rank = Number(member?.rank || 0);
+        return title ? `${rank} - ${title}` : `Rank ${rank}`;
+    }
+
     function renderLeaderApplicationDetail(app) {
         const root = document.getElementById("leader-app-detail");
         if (!root) return;
@@ -2142,20 +2167,27 @@
 
         if (!filtered.length) {
             body.innerHTML = `<tr><td colspan='6' class='empty-msg'>${leaderMembersRaw.length ? 'Nu exista membri pentru filtrul curent.' : 'Nu exista membri.'}</td></tr>`;
+            renderLeaderMemberDetail(null);
             return;
+        }
+
+        if (!selectedLeaderMember || !filtered.some((member) => String(member.username) === selectedLeaderMember)) {
+            selectedLeaderMember = String(filtered[0].username || "");
         }
 
         body.innerHTML = filtered.map((member) => {
             const encodedUser = encodeURIComponent(member.username);
             const selfLock = !!member.is_self;
+            const isActive = String(member.username) === selectedLeaderMember;
             return `
-                <tr>
+                <tr class="${isActive ? 'leader-app-row active' : ''}" onclick="selectLeaderMember('${encodedUser}')">
                     <td><strong>${safeHtml(member.username)}</strong>${selfLock ? ' <span class="badge badge-gray">Tu</span>' : ''}</td>
-                    <td>${member.rank || 0}</td>
+                    <td><span class="badge badge-blue">${safeHtml(leaderRankLabel(member))}</span></td>
                     <td>${member.level || 1}</td>
                     <td>${member.warns_total || 0}</td>
                     <td>${safeHtml(member.last_online || "-")}</td>
                     <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="tiny-btn" onclick="selectLeaderMember('${encodedUser}')" >Inspect</button>
                         <button class="tiny-btn" onclick="adjustMemberRank('${encodedUser}','down')" ${selfLock ? 'disabled' : ''}>- Rank</button>
                         <button class="tiny-btn" onclick="adjustMemberRank('${encodedUser}','up')" ${selfLock ? 'disabled' : ''}>+ Rank</button>
                         <button class="tiny-btn danger" onclick="giveFactionWarn('${encodedUser}')" ${selfLock ? 'disabled' : ''}>Warn</button>
@@ -2165,17 +2197,98 @@
                 </tr>
             `;
         }).join("");
+
+        renderLeaderMemberDetail(leaderMembersRaw.find((member) => String(member.username) === selectedLeaderMember) || filtered[0]);
     }
 
     window.filterLeaderMembers = function() {
         renderLeaderMembers(leaderMembersRaw);
     };
 
+    function renderLeaderWarnHistory(rows, target = "") {
+        const body = document.getElementById("leader-warns-body");
+        if (!body) return;
+        leaderWarnsRaw = Array.isArray(rows) ? rows : [];
+        const filtered = target
+            ? leaderWarnsRaw.filter((row) => String(row.target || "") === String(target))
+            : leaderWarnsRaw;
+        if (!filtered.length) {
+            body.innerHTML = `<tr><td colspan='4' class='empty-msg'>${target ? 'Membrul selectat nu are warns in istoric.' : 'Nu exista warns inca.'}</td></tr>`;
+            return;
+        }
+
+        body.innerHTML = filtered.slice(0, 20).map((row) => `
+            <tr>
+                <td>${fmtDate(row.ts)}</td>
+                <td><strong>${safeHtml(row.target || "-")}</strong></td>
+                <td>${safeHtml(row.from || "-")}</td>
+                <td class="leader-log-note">${safeHtml(row.reason || "-")}</td>
+            </tr>
+        `).join("");
+    }
+
+    function renderLeaderMemberDetail(member) {
+        const root = document.getElementById("leader-member-detail");
+        if (!root) return;
+        if (!member) {
+            root.innerHTML = `<div class="empty-panel">Alege un membru din stanga ca sa vezi rank-ul real, warns si istoricul lui recent.</div>`;
+            renderLeaderWarnHistory(leaderWarnsRaw, "");
+            return;
+        }
+
+        const warns = leaderWarnsRaw.filter((row) => String(row.target || "") === String(member.username));
+        const lastWarn = warns[0];
+        root.innerHTML = `
+            <div class="leader-detail-title">${safeHtml(member.username)}</div>
+            <div class="leader-detail-sub">${safeHtml(leaderRankLabel(member))} | Level ${Number(member.level || 1)} | Last online: ${safeHtml(member.last_online || "-")}</div>
+            <div class="leader-detail-grid">
+                <div class="leader-detail-block">
+                    <div class="k">Cash</div>
+                    <div class="v">$${fmt(member.cash || 0)}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Warns Total</div>
+                    <div class="v">${Number(member.warns_total || 0)}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">In Factiune Din</div>
+                    <div class="v">${member.joined_at ? fmtDate(member.joined_at) : "-"}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Ultimul Warn</div>
+                    <div class="v">${lastWarn ? `${fmtDate(lastWarn.ts)} de la ${safeHtml(lastWarn.from || "-")}` : "Fara warn-uri in istoric."}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Ultimul Motiv</div>
+                    <div class="v">${safeHtml(lastWarn?.reason || "-")}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Status Lider</div>
+                    <div class="v">${Number(member.rank || 0) >= 5 ? "Leader" : "Membru activ"}</div>
+                </div>
+            </div>
+            <div class="leader-action-strip">
+                <button class="tiny-btn" onclick="adjustMemberRank('${encodeURIComponent(member.username)}','down')" ${member.is_self ? 'disabled' : ''}>Coboara Rank</button>
+                <button class="tiny-btn" onclick="adjustMemberRank('${encodeURIComponent(member.username)}','up')" ${member.is_self ? 'disabled' : ''}>Urca Rank</button>
+                <button class="tiny-btn danger" onclick="giveFactionWarn('${encodeURIComponent(member.username)}')" ${member.is_self ? 'disabled' : ''}>Warn Rapid</button>
+            </div>
+        `;
+        renderLeaderWarnHistory(leaderWarnsRaw, member.username);
+    }
+
+    window.selectLeaderMember = function(encodedUser) {
+        selectedLeaderMember = decodeURIComponent(encodedUser);
+        renderLeaderMembers(leaderMembersRaw);
+    };
+
     function leaderLogEventMeta(eventName) {
         const map = {
+            application_submitted: { label: "Aplicatie trimisa", note: "Un candidat a intrat in pipeline-ul factiunii." },
             application_invited: { label: "Aplicatie acceptata", note: "Candidatul a primit invite." },
             application_rejected: { label: "Aplicatie respinsa", note: "Aplicatia a fost respinsa de lider." },
             invite_accepted: { label: "Invite confirmat", note: "Jucatorul a intrat in factiune." },
+            invite_declined: { label: "Invite refuzat", note: "Candidatul a refuzat intrarea in factiune." },
+            application_archived: { label: "Aplicatie arhivata", note: "O aplicatie respinsa a fost mutata in istoric." },
             apps_opened: { label: "Aplicatii deschise", note: "Sesiunea de recrutare a fost redeschisa." },
             apps_closed: { label: "Aplicatii inchise", note: "Recrutarea a fost oprita." },
             leader_promoted: { label: "Leader promovat", note: "Un membru a fost ridicat la lider." },
@@ -2196,10 +2309,11 @@
 
         body.innerHTML = leaderLogsRaw.map((row) => {
             const meta = leaderLogEventMeta(row.event);
-            const details = row.note
-                || (row.new_rank ? `Rank nou: ${row.new_rank}` : "")
-                || (row.warns_total ? `Total warns: ${row.warns_total}` : "")
-                || meta.note;
+            const rankBits = [];
+            if (row.old_rank) rankBits.push(`Rank vechi: ${row.old_rank}`);
+            if (row.new_rank) rankBits.push(`Rank nou: ${row.new_rank}`);
+            if (row.warns_total) rankBits.push(`Total warns: ${row.warns_total}`);
+            const details = [row.note, rankBits.join(" | "), meta.note].filter(Boolean).join(" | ");
             return `
                 <tr>
                     <td>${fmtDate(row.ts || row.created_at)}</td>
@@ -2281,6 +2395,7 @@
             toggleAppsBtn.textContent = appsOpen ? "Inchide Aplicatii" : "Deschide Aplicatii";
             renderLeaderOverview(data);
             renderLeaderApplications(data.leader_pending_apps || []);
+            renderLeaderWarnHistory(data.leader_warn_history || []);
             renderLeaderMembers(data.leader_members || []);
             renderLeaderLogs(data.leader_logs || []);
         } else {
