@@ -323,6 +323,41 @@
         .notice-title { font-size:14px; font-weight:800; color:#fff; }
         .notice-body { color:#cbd5e1; font-size:13px; line-height:1.5; }
         .notice-time { color:#64748b; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; }
+        .leader-overview-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin:16px 0; }
+        .leader-overview-card {
+            background: linear-gradient(180deg, rgba(0,255,136,0.08), rgba(255,255,255,0.03));
+            border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px;
+        }
+        .leader-overview-card .k { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; font-weight:800; }
+        .leader-overview-card .v { margin-top:8px; color:#fff; font-size:24px; font-weight:900; }
+        .leader-overview-card .n { margin-top:6px; color:#94a3b8; font-size:12px; line-height:1.45; }
+        .leader-roster { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+        .leader-shell { display:grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); gap:14px; margin-top:14px; }
+        .leader-pane {
+            background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:16px;
+        }
+        .leader-search-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+        .leader-search-row input, .leader-search-row select {
+            flex:1; min-width:160px; padding:11px 14px; border-radius:11px; border:1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04); color:#e2e8f0; font-size:13px; outline:none;
+        }
+        .leader-search-row input::placeholder { color:#475569; }
+        .leader-app-row { cursor:pointer; }
+        .leader-app-row.active td { background: rgba(0,255,136,0.08); }
+        .leader-detail-card {
+            background: linear-gradient(160deg, rgba(56,189,248,0.08), rgba(17,24,39,0.9) 46%);
+            border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px;
+        }
+        .leader-detail-title { font-size:20px; font-weight:900; color:#fff; }
+        .leader-detail-sub { margin-top:6px; color:#94a3b8; font-size:13px; line-height:1.55; }
+        .leader-detail-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin-top:16px; }
+        .leader-detail-block {
+            background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px;
+        }
+        .leader-detail-block .k { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; font-weight:800; }
+        .leader-detail-block .v { color:#e2e8f0; font-size:14px; font-weight:700; margin-top:6px; line-height:1.55; white-space:pre-wrap; word-break:break-word; }
+        .leader-action-strip { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+        .leader-log-note { color:#cbd5e1; font-size:12px; line-height:1.45; }
         .empty-panel {
             border:1px dashed rgba(255,255,255,0.12); border-radius:14px; padding:28px; text-align:center; color:#64748b; font-size:13px;
         }
@@ -384,7 +419,9 @@
             .garage-specs { grid-template-columns: 1fr; }
             .garage-focus-grid { grid-template-columns: 1fr 1fr; }
             .property-detail-grid { grid-template-columns: 1fr; }
+            .leader-detail-grid { grid-template-columns: 1fr; }
             .pref-btn { width: 100%; }
+            .leader-shell { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -756,21 +793,54 @@
                     </div>
                 </div>
                 <div id="leader-status" class="status-line"></div>
+                <div id="leader-overview-grid" class="leader-overview-grid"></div>
+                <div id="leader-roster" class="leader-roster"></div>
 
-                <div class="card-title" style="margin-top:14px"><i class="fas fa-inbox"></i> Aplicatii Pending</div>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>Data</th><th>Jucator</th><th>Mesaj</th><th>Actiuni</th></tr></thead>
-                        <tbody id="leader-apps-body"><tr><td colspan="4" class="empty-msg">Nicio aplicatie pending.</td></tr></tbody>
-                    </table>
+                <div class="leader-shell">
+                    <div class="leader-pane">
+                        <div class="card-title" style="margin-bottom:10px"><i class="fas fa-inbox"></i> Aplicatii Pending</div>
+                        <div class="leader-search-row">
+                            <input id="leader-app-search" type="text" placeholder="Cauta dupa jucator sau text..." oninput="filterLeaderApplications()">
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Data</th><th>Jucator</th><th>Level</th><th>Preview</th><th>Actiuni</th></tr></thead>
+                                <tbody id="leader-apps-body"><tr><td colspan="5" class="empty-msg">Nicio aplicatie pending.</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="leader-pane">
+                        <div class="card-title" style="margin-bottom:10px"><i class="fas fa-id-card"></i> Dosar Candidat</div>
+                        <div id="leader-app-detail" class="leader-detail-card">
+                            <div class="empty-panel">Selecteaza o aplicatie din stanga ca sa vezi CV-ul complet si actiunile rapide.</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="card-title" style="margin-top:14px"><i class="fas fa-users-cog"></i> Management Membri</div>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>Jucator</th><th>Rank</th><th>Warns</th><th>Last Online</th><th>Actiuni</th></tr></thead>
-                        <tbody id="leader-members-body"><tr><td colspan="5" class="empty-msg">Nu exista membri.</td></tr></tbody>
-                    </table>
+                <div class="leader-shell">
+                    <div class="leader-pane">
+                        <div class="card-title" style="margin-bottom:10px"><i class="fas fa-users-cog"></i> Management Membri</div>
+                        <div class="leader-search-row">
+                            <input id="leader-member-search" type="text" placeholder="Filtreaza membri dupa nume..." oninput="filterLeaderMembers()">
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Jucator</th><th>Rank</th><th>Level</th><th>Warns</th><th>Last Online</th><th>Actiuni</th></tr></thead>
+                                <tbody id="leader-members-body"><tr><td colspan="6" class="empty-msg">Nu exista membri.</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="leader-pane">
+                        <div class="card-title" style="margin-bottom:10px"><i class="fas fa-timeline"></i> Faction Logs</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Data</th><th>Eveniment</th><th>Actor</th><th>Target</th><th>Detalii</th></tr></thead>
+                                <tbody id="leader-logs-body"><tr><td colspan="5" class="empty-msg">Nu exista loguri inca.</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -856,6 +926,10 @@
     let allFactionMembers = [];
     let hubSnapshot = null;
     let leaderAppMap = {};
+    let leaderPendingApps = [];
+    let leaderMembersRaw = [];
+    let leaderLogsRaw = [];
+    let selectedLeaderAppId = "";
     let factionHubInterval = null;
     let currentProfileData = null;
     let selectedGarageCarIndex = 0;
@@ -1890,31 +1964,149 @@
         }).join("");
     }
 
-    function renderLeaderApplications(apps) {
-        const body = document.getElementById("leader-apps-body");
-        leaderAppMap = {};
-        if (!apps?.length) {
-            body.innerHTML = "<tr><td colspan='4' class='empty-msg'>Nicio aplicatie pending.</td></tr>";
+    function renderLeaderOverview(data) {
+        const root = document.getElementById("leader-overview-grid");
+        const roster = document.getElementById("leader-roster");
+        if (!root || !roster) return;
+
+        const info = data?.leader_overview || {};
+        const appsOpen = !!info.apps_open;
+        root.innerHTML = `
+            <div class="leader-overview-card">
+                <div class="k">Membri Totali</div>
+                <div class="v">${Number(info.members_total || 0)}</div>
+                <div class="n">Toata structura facțiunii, ordonata dupa rank.</div>
+            </div>
+            <div class="leader-overview-card">
+                <div class="k">Aplicatii Pending</div>
+                <div class="v">${Number(info.pending_apps || 0)}</div>
+                <div class="n">${appsOpen ? "Aplicatiile sunt deschise acum." : "Aplicatiile sunt inchise acum."}</div>
+            </div>
+            <div class="leader-overview-card">
+                <div class="k">Warns Active</div>
+                <div class="v">${Number(info.warns_total || 0)}</div>
+                <div class="n">Total warns contorizate pe membrii actuali.</div>
+            </div>
+            <div class="leader-overview-card">
+                <div class="k">Loguri Recente</div>
+                <div class="v">${Number(info.recent_logs || 0)}</div>
+                <div class="n">${Number(info.leaders_total || 0)} lideri marcati in factiune.</div>
+            </div>
+        `;
+
+        const leaders = Array.isArray(data?.leader_names) ? data.leader_names : [];
+        roster.innerHTML = leaders.length
+            ? leaders.map((name) => `<span class="badge badge-green">Leader: ${safeHtml(name)}</span>`).join("")
+            : `<span class="badge badge-gray">Niciun leader sincronizat separat.</span>`;
+    }
+
+    function renderLeaderApplicationDetail(app) {
+        const root = document.getElementById("leader-app-detail");
+        if (!root) return;
+        if (!app) {
+            root.innerHTML = `<div class="empty-panel">Selecteaza o aplicatie din stanga ca sa vezi CV-ul complet si actiunile rapide.</div>`;
             return;
         }
 
-        body.innerHTML = apps.map((app) => {
+        const form = app.form || {};
+        const reason = form.reason || app.message || "-";
+        root.innerHTML = `
+            <div class="leader-detail-title">${safeHtml(app.applicant || "-")}</div>
+            <div class="leader-detail-sub">Level ${Number(app.applicant_level || 1)} | ${safeHtml(app.applicant_last_online || "-")} | ${Number(form.real_chars || 0)} caractere reale.</div>
+            <div class="leader-detail-grid">
+                <div class="leader-detail-block">
+                    <div class="k">Nume RPG</div>
+                    <div class="v">${safeHtml(form.name || "-")}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Varsta</div>
+                    <div class="v">${safeHtml(String(form.age || "-"))}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Ore Jucate</div>
+                    <div class="v">${Number(app.applicant_hours || 0)}h</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Trimisa la</div>
+                    <div class="v">${fmtDate(app.created_at)}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Scurta Descriere</div>
+                    <div class="v">${safeHtml(form.about || "-")}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Motivatie</div>
+                    <div class="v">${safeHtml(reason)}</div>
+                </div>
+            </div>
+            <div class="leader-action-strip">
+                <button class="tiny-btn" onclick="viewFactionApplication('${encodeURIComponent(app.id)}')">CV Popup</button>
+                <button class="tiny-btn" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','accept')">Accepta</button>
+                <button class="tiny-btn danger" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','reject')">Respinge</button>
+            </div>
+        `;
+    }
+
+    function renderLeaderApplications(apps) {
+        const body = document.getElementById("leader-apps-body");
+        leaderPendingApps = Array.isArray(apps) ? apps : [];
+        leaderAppMap = {};
+        leaderPendingApps.forEach((app) => {
             leaderAppMap[String(app.id || "")] = app;
+        });
+
+        const search = String(document.getElementById("leader-app-search")?.value || "").trim().toLowerCase();
+        const filtered = leaderPendingApps.filter((app) => {
+            if (!search) return true;
+            const haystack = [
+                app.applicant,
+                app.preview,
+                app.form?.about,
+                app.form?.reason,
+            ].map((value) => String(value || "").toLowerCase()).join(" ");
+            return haystack.includes(search);
+        });
+
+        if (!filtered.length) {
+            body.innerHTML = `<tr><td colspan='5' class='empty-msg'>${leaderPendingApps.length ? 'Nu exista rezultate pentru filtrul curent.' : 'Nicio aplicatie pending.'}</td></tr>`;
+            renderLeaderApplicationDetail(null);
+            return;
+        }
+
+        if (!selectedLeaderAppId || !leaderAppMap[selectedLeaderAppId] || !filtered.some((app) => String(app.id) === selectedLeaderAppId)) {
+            selectedLeaderAppId = String(filtered[0].id || "");
+        }
+
+        body.innerHTML = filtered.map((app) => {
             const preview = app.preview || app.form?.reason || app.message || "-";
+            const appId = String(app.id || "");
+            const isActive = appId === selectedLeaderAppId;
             return `
-                <tr>
+                <tr class="leader-app-row ${isActive ? 'active' : ''}" onclick="selectLeaderApplication('${encodeURIComponent(appId)}')">
                     <td>${fmtDate(app.created_at)}</td>
                     <td><strong>${safeHtml(app.applicant || "-")}</strong></td>
+                    <td>${Number(app.applicant_level || 1)}</td>
                     <td>${safeHtml(preview)}</td>
                     <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="tiny-btn" onclick="viewFactionApplication('${encodeURIComponent(app.id)}')">CV</button>
-                        <button class="tiny-btn" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','accept')">Accepta</button>
-                        <button class="tiny-btn danger" onclick="reviewFactionApplication('${encodeURIComponent(app.id)}','reject')">Respinge</button>
+                        <button class="tiny-btn" onclick="viewFactionApplication('${encodeURIComponent(appId)}')">CV</button>
+                        <button class="tiny-btn" onclick="reviewFactionApplication('${encodeURIComponent(appId)}','accept')">Accepta</button>
+                        <button class="tiny-btn danger" onclick="reviewFactionApplication('${encodeURIComponent(appId)}','reject')">Respinge</button>
                     </td>
                 </tr>
             `;
         }).join("");
+
+        renderLeaderApplicationDetail(leaderAppMap[selectedLeaderAppId] || filtered[0]);
     }
+
+    window.selectLeaderApplication = function(encodedAppId) {
+        selectedLeaderAppId = decodeURIComponent(encodedAppId);
+        renderLeaderApplications(leaderPendingApps);
+    };
+
+    window.filterLeaderApplications = function() {
+        renderLeaderApplications(leaderPendingApps);
+    };
 
     window.viewFactionApplication = function(encodedAppId) {
         const appId = decodeURIComponent(encodedAppId);
@@ -1924,6 +2116,7 @@
         const html = `
             <div style="text-align:left;font-size:13px;line-height:1.5;">
                 <p><strong>Aplicat de:</strong> ${safeHtml(app.applicant || "-")}</p>
+                <p><strong>Level:</strong> ${Number(app.applicant_level || 1)}</p>
                 <p><strong>Nume:</strong> ${safeHtml(form.name || "-")}</p>
                 <p><strong>Varsta:</strong> ${safeHtml(String(form.age || "-"))}</p>
                 <p><strong>Descriere:</strong><br>${safeHtml(form.about || "-")}</p>
@@ -1940,23 +2133,83 @@
 
     function renderLeaderMembers(members) {
         const body = document.getElementById("leader-members-body");
-        if (!members?.length) {
-            body.innerHTML = "<tr><td colspan='5' class='empty-msg'>Nu exista membri.</td></tr>";
+        leaderMembersRaw = Array.isArray(members) ? members : [];
+        const search = String(document.getElementById("leader-member-search")?.value || "").trim().toLowerCase();
+        const filtered = leaderMembersRaw.filter((member) => {
+            if (!search) return true;
+            return String(member.username || "").toLowerCase().includes(search);
+        });
+
+        if (!filtered.length) {
+            body.innerHTML = `<tr><td colspan='6' class='empty-msg'>${leaderMembersRaw.length ? 'Nu exista membri pentru filtrul curent.' : 'Nu exista membri.'}</td></tr>`;
             return;
         }
 
-        body.innerHTML = members.map((member) => `
-            <tr>
-                <td><strong>${safeHtml(member.username)}</strong></td>
-                <td>${member.rank || 0}</td>
-                <td>${member.warns_total || 0}</td>
-                <td>${safeHtml(member.last_online || "-")}</td>
-                <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <button class="tiny-btn danger" onclick="giveFactionWarn('${encodeURIComponent(member.username)}')">Warn</button>
-                    <button class="tiny-btn" onclick="promoteLeaderFromList('${encodeURIComponent(member.username)}')">Set Leader</button>
-                </td>
-            </tr>
-        `).join("");
+        body.innerHTML = filtered.map((member) => {
+            const encodedUser = encodeURIComponent(member.username);
+            const selfLock = !!member.is_self;
+            return `
+                <tr>
+                    <td><strong>${safeHtml(member.username)}</strong>${selfLock ? ' <span class="badge badge-gray">Tu</span>' : ''}</td>
+                    <td>${member.rank || 0}</td>
+                    <td>${member.level || 1}</td>
+                    <td>${member.warns_total || 0}</td>
+                    <td>${safeHtml(member.last_online || "-")}</td>
+                    <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="tiny-btn" onclick="adjustMemberRank('${encodedUser}','down')" ${selfLock ? 'disabled' : ''}>- Rank</button>
+                        <button class="tiny-btn" onclick="adjustMemberRank('${encodedUser}','up')" ${selfLock ? 'disabled' : ''}>+ Rank</button>
+                        <button class="tiny-btn danger" onclick="giveFactionWarn('${encodedUser}')" ${selfLock ? 'disabled' : ''}>Warn</button>
+                        <button class="tiny-btn" onclick="promoteLeaderFromList('${encodedUser}')" ${selfLock ? 'disabled' : ''}>Set Leader</button>
+                        <button class="tiny-btn danger" onclick="removeFactionMember('${encodedUser}')" ${selfLock ? 'disabled' : ''}>Kick</button>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    window.filterLeaderMembers = function() {
+        renderLeaderMembers(leaderMembersRaw);
+    };
+
+    function leaderLogEventMeta(eventName) {
+        const map = {
+            application_invited: { label: "Aplicatie acceptata", note: "Candidatul a primit invite." },
+            application_rejected: { label: "Aplicatie respinsa", note: "Aplicatia a fost respinsa de lider." },
+            invite_accepted: { label: "Invite confirmat", note: "Jucatorul a intrat in factiune." },
+            apps_opened: { label: "Aplicatii deschise", note: "Sesiunea de recrutare a fost redeschisa." },
+            apps_closed: { label: "Aplicatii inchise", note: "Recrutarea a fost oprita." },
+            leader_promoted: { label: "Leader promovat", note: "Un membru a fost ridicat la lider." },
+            member_warned: { label: "Warn acordat", note: "Un membru a primit warn." },
+            member_rank_changed: { label: "Rank modificat", note: "Rank-ul unui membru a fost schimbat." },
+            member_removed: { label: "Membru eliminat", note: "Membrul a fost scos din factiune." },
+        };
+        return map[String(eventName || "")] || { label: String(eventName || "Actiune"), note: "-" };
+    }
+
+    function renderLeaderLogs(logs) {
+        const body = document.getElementById("leader-logs-body");
+        leaderLogsRaw = Array.isArray(logs) ? logs : [];
+        if (!leaderLogsRaw.length) {
+            body.innerHTML = "<tr><td colspan='5' class='empty-msg'>Nu exista loguri inca.</td></tr>";
+            return;
+        }
+
+        body.innerHTML = leaderLogsRaw.map((row) => {
+            const meta = leaderLogEventMeta(row.event);
+            const details = row.note
+                || (row.new_rank ? `Rank nou: ${row.new_rank}` : "")
+                || (row.warns_total ? `Total warns: ${row.warns_total}` : "")
+                || meta.note;
+            return `
+                <tr>
+                    <td>${fmtDate(row.ts || row.created_at)}</td>
+                    <td><span class="badge badge-blue">${safeHtml(meta.label)}</span></td>
+                    <td>${safeHtml(row.actor || "-")}</td>
+                    <td>${safeHtml(row.target || "-")}</td>
+                    <td class="leader-log-note">${safeHtml(details || "-")}</td>
+                </tr>
+            `;
+        }).join("");
     }
 
     function renderApplyFactionOptions(openFactions, gameFactions) {
@@ -2026,8 +2279,10 @@
             leaderAppsBadge.className = "badge " + (appsOpen ? "badge-green" : "badge-red");
             leaderAppsBadge.textContent = appsOpen ? "OPEN" : "CLOSED";
             toggleAppsBtn.textContent = appsOpen ? "Inchide Aplicatii" : "Deschide Aplicatii";
+            renderLeaderOverview(data);
             renderLeaderApplications(data.leader_pending_apps || []);
             renderLeaderMembers(data.leader_members || []);
+            renderLeaderLogs(data.leader_logs || []);
         } else {
             leaderTools.style.display = "none";
         }
@@ -2226,6 +2481,33 @@
             return;
         }
         setStatusLine("leader-status", true, data.msg || "Warn aplicat.");
+        await loadAllUsers();
+        await refreshFactionHub();
+    };
+
+    window.adjustMemberRank = async function(encodedUser, direction) {
+        const target = decodeURIComponent(encodedUser);
+        const data = await panelApi("set_member_rank", { target, direction });
+        if (!data.ok) {
+            setStatusLine("leader-status", false, data.msg || "Nu am putut modifica rank-ul.");
+            return;
+        }
+        setStatusLine("leader-status", true, data.msg || "Rank actualizat.");
+        await loadAllUsers();
+        await refreshFactionHub();
+    };
+
+    window.removeFactionMember = async function(encodedUser) {
+        const target = decodeURIComponent(encodedUser);
+        const reason = prompt(`Motiv pentru scoaterea lui ${target}:`, "Inactivitate sau abatere de la regulament.");
+        if (reason === null) return;
+
+        const data = await panelApi("remove_member", { target, reason });
+        if (!data.ok) {
+            setStatusLine("leader-status", false, data.msg || "Nu am putut scoate membrul.");
+            return;
+        }
+        setStatusLine("leader-status", true, data.msg || "Membru eliminat.");
         await loadAllUsers();
         await refreshFactionHub();
     };

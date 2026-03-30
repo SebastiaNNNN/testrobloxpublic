@@ -181,6 +181,18 @@ def _flatten_apps(apps_raw) -> list[dict]:
     return apps
 
 
+def _flatten_collection(rows_raw) -> list[dict]:
+    rows = []
+    for row_id, row_data in _as_dict(rows_raw).items():
+        if not isinstance(row_data, dict):
+            continue
+        row = dict(row_data)
+        row["id"] = str(row_id)
+        rows.append(row)
+    rows.sort(key=lambda item: item.get("ts", item.get("created_at", 0)), reverse=True)
+    return rows
+
+
 def _sanitize_letters_spaces(value: str, max_len: int = 15) -> str:
     clean = re.sub(r"[^A-Za-z\s]", "", str(value or ""))
     clean = re.sub(r"\s+", " ", clean).strip()
@@ -306,6 +318,21 @@ def _available_factions(users: dict):
     return sorted(found)
 
 
+def _log_faction_event(faction: str, actor: str, target: str, event: str, auth_token: str | None = None, **extra):
+    payload = {
+        "faction": faction,
+        "actor": actor,
+        "target": target,
+        "event": event,
+        "ts": _now_ms(),
+    }
+    for key, value in extra.items():
+        if value is None:
+            continue
+        payload[key] = value
+    firebase_post("panel/faction_logs", payload, auth_token=auth_token)
+
+
 def _load_faction_runtime_state(game_factions: list[dict], auth_token: str | None = None):
     ok, raw, _ = firebase_get("panel/faction_state", auth_token=auth_token)
     state = _as_dict(raw) if ok else {}
@@ -361,13 +388,24 @@ def _handle_list_hub(identity: dict, users: dict):
 
     leader_pending = []
     leader_members = []
+    leader_logs = []
+    leader_names = []
+    leader_overview = {}
     if is_leader:
+        users_by_name = {str(name): _as_dict(data) for name, data in users.items()}
         leader_pending = [
-            app
+            dict(app)
             for app in all_apps
             if _normalize_status(app.get("status", "pending")) == "pending"
             and str(app.get("faction", "")) == my_faction
-        ][:100]
+        ]
+        for app in leader_pending:
+            applicant_name = str(app.get("applicant", "")).strip()
+            applicant_profile = users_by_name.get(applicant_name, {})
+            app["applicant_level"] = parse_int(applicant_profile.get("level", 1), 1)
+            app["applicant_hours"] = parse_int(applicant_profile.get("ore_jucate", 0), 0)
+            app["applicant_last_online"] = applicant_profile.get("last_online", "-")
+        leader_pending = leader_pending[:100]
 
         for member_name, member_data in users.items():
             member = _as_dict(member_data)
@@ -377,11 +415,42 @@ def _handle_list_hub(identity: dict, users: dict):
                 {
                     "username": member_name,
                     "rank": parse_int(member.get("rank", 0), 0),
+                    "level": parse_int(member.get("level", 1), 1),
+                    "cash": parse_int(member.get("banii_cash", 0), 0),
                     "warns_total": parse_int(member.get("faction_warns_total", 0), 0),
                     "last_online": member.get("last_online", "-"),
+                    "joined_at": parse_int(member.get("faction_joined_at", 0), 0),
+                    "is_self": member_name == username,
                 }
             )
         leader_members.sort(key=lambda row: (-row["rank"], row["username"].lower()))
+
+        ok_leaders, raw_leaders, _ = firebase_get(
+            f"panel/faction_leaders/{_safe_path(my_faction)}",
+            auth_token=auth_token,
+        )
+        leaders_map = _as_dict(raw_leaders) if ok_leaders else {}
+        leader_names = sorted(
+            {str(name) for name, row in leaders_map.items() if row}
+            | {row["username"] for row in leader_members if row["rank"] >= 5}
+        )
+
+        logs_raw = firebase_get("panel/faction_logs", auth_token=auth_token)[1]
+        leader_logs = [
+            row
+            for row in _flatten_collection(logs_raw)
+            if str(row.get("faction", "")) == my_faction
+        ][:40]
+
+        total_warns = sum(parse_int(row.get("warns_total", 0), 0) for row in leader_members)
+        leader_overview = {
+            "members_total": len(leader_members),
+            "leaders_total": len(leader_names),
+            "pending_apps": len(leader_pending),
+            "warns_total": total_warns,
+            "apps_open": _as_bool(apps_open_map.get(my_faction, False), False),
+            "recent_logs": len(leader_logs),
+        }
 
     all_purchases = _as_dict(firebase_get("panel/shop_purchases", auth_token=auth_token)[1])
     history = []
@@ -412,6 +481,9 @@ def _handle_list_hub(identity: dict, users: dict):
         "my_applications": my_apps,
         "leader_pending_apps": leader_pending,
         "leader_members": leader_members,
+        "leader_logs": leader_logs,
+        "leader_names": leader_names,
+        "leader_overview": leader_overview,
         "shop_history": history[:40],
     }
 
@@ -566,16 +638,13 @@ def _handle_review_application(identity: dict, users: dict, body: dict):
     if not ok_app:
         return {"ok": False, "msg": err_app}
 
-    firebase_post(
-        "panel/faction_logs",
-        {
-            "faction": my_faction,
-            "actor": username,
-            "target": applicant,
-            "event": "application_invited" if decision == "accept" else "application_rejected",
-            "ts": _now_ms(),
-        },
+    _log_faction_event(
+        my_faction,
+        username,
+        applicant,
+        "application_invited" if decision == "accept" else "application_rejected",
         auth_token=auth_token,
+        note=feedback,
     )
     if decision == "accept":
         return {"ok": True, "msg": f"{applicant} a fost acceptat si a primit invite in {my_faction}."}
@@ -634,15 +703,11 @@ def _handle_respond_invite(identity: dict, users: dict, body: dict):
         if not ok_app:
             return {"ok": False, "msg": err_app}
 
-        firebase_post(
-            "panel/faction_logs",
-            {
-                "faction": faction,
-                "actor": username,
-                "target": username,
-                "event": "invite_accepted",
-                "ts": _now_ms(),
-            },
+        _log_faction_event(
+            faction,
+            username,
+            username,
+            "invite_accepted",
             auth_token=auth_token,
         )
         return {"ok": True, "msg": f"Ai intrat in {faction}.", "sync_note": sync_note}
@@ -697,6 +762,13 @@ def _handle_toggle_apps(identity: dict, users: dict):
         return {"ok": False, "msg": save_err}
 
     state_text = "DESCHISE" if next_state else "INCHISE"
+    _log_faction_event(
+        my_faction,
+        username,
+        my_faction,
+        "apps_opened" if next_state else "apps_closed",
+        auth_token=auth_token,
+    )
     return {"ok": True, "apps_open": next_state, "msg": f"Aplicatiile pentru {my_faction} sunt acum {state_text}."}
 
 
@@ -734,6 +806,14 @@ def _handle_add_leader(identity: dict, users: dict, body: dict):
         return {"ok": False, "msg": err_flag}
 
     _send_roblox_command(username, "SetFaction", target, my_faction, "5")
+    _log_faction_event(
+        my_faction,
+        username,
+        target,
+        "leader_promoted",
+        auth_token=auth_token,
+        new_rank=5,
+    )
     return {"ok": True, "msg": f"{target} este acum leader in {my_faction}."}
 
 
@@ -779,7 +859,122 @@ def _handle_warn_member(identity: dict, users: dict, body: dict):
     if not ok_user:
         return {"ok": False, "msg": err_user}
 
+    _log_faction_event(
+        my_faction,
+        username,
+        target,
+        "member_warned",
+        auth_token=auth_token,
+        note=reason,
+        warns_total=next_total,
+    )
     return {"ok": True, "msg": f"Warn aplicat lui {target}. Total: {next_total}/3."}
+
+
+def _handle_set_member_rank(identity: dict, users: dict, body: dict):
+    username = identity["username"]
+    auth_token = identity.get("id_token", "")
+    me = _as_dict(users.get(username))
+    my_faction = str(me.get("factiune", "Civil")) or "Civil"
+    if not _is_leader(users, username, my_faction, auth_token=auth_token):
+        return {"ok": False, "msg": "Nu ai drepturi de leader."}
+
+    raw_target = str(body.get("target", "")).strip()
+    direction = str(body.get("direction", "")).strip().lower()
+    if not raw_target or direction not in ("up", "down"):
+        return {"ok": False, "msg": "Target/direction invalid."}
+
+    target = find_case_insensitive_key(users.keys(), raw_target) or raw_target
+    target_profile = _as_dict(users.get(target))
+    if not target_profile:
+        return {"ok": False, "msg": "Membrul nu exista."}
+    if target == username:
+        return {"ok": False, "msg": "Nu iti poti modifica propriul rank din panel."}
+    if str(target_profile.get("factiune", "Civil")) != my_faction:
+        return {"ok": False, "msg": "Poti edita doar membri din factiunea ta."}
+
+    current_rank = parse_int(target_profile.get("rank", 0), 0)
+    delta = 1 if direction == "up" else -1
+    next_rank = max(1, min(4, current_rank + delta))
+    if next_rank == current_rank:
+        return {"ok": False, "msg": f"Rank-ul lui {target} este deja la limita permisa."}
+
+    ok_user, _, err_user = _firebase_patch(
+        f"users/{_safe_path(target)}",
+        {"rank": next_rank},
+        auth_token=auth_token,
+    )
+    if not ok_user:
+        return {"ok": False, "msg": err_user}
+
+    if current_rank >= 5 and next_rank < 5:
+        firebase_write(
+            f"panel/faction_leaders/{_safe_path(my_faction)}/{_safe_path(target)}",
+            {},
+            "PUT",
+            auth_token=auth_token,
+        )
+
+    _send_roblox_command(username, "SetFaction", target, my_faction, str(next_rank))
+    _log_faction_event(
+        my_faction,
+        username,
+        target,
+        "member_rank_changed",
+        auth_token=auth_token,
+        old_rank=current_rank,
+        new_rank=next_rank,
+    )
+    return {"ok": True, "msg": f"Rank-ul lui {target} este acum {next_rank}.", "new_rank": next_rank}
+
+
+def _handle_remove_member(identity: dict, users: dict, body: dict):
+    username = identity["username"]
+    auth_token = identity.get("id_token", "")
+    me = _as_dict(users.get(username))
+    my_faction = str(me.get("factiune", "Civil")) or "Civil"
+    if not _is_leader(users, username, my_faction, auth_token=auth_token):
+        return {"ok": False, "msg": "Nu ai drepturi de leader."}
+
+    raw_target = str(body.get("target", "")).strip()
+    reason = str(body.get("reason", "")).strip()[:300]
+    if not raw_target:
+        return {"ok": False, "msg": "Target lipsa."}
+
+    target = find_case_insensitive_key(users.keys(), raw_target) or raw_target
+    target_profile = _as_dict(users.get(target))
+    if not target_profile:
+        return {"ok": False, "msg": "Membrul nu exista."}
+    if target == username:
+        return {"ok": False, "msg": "Nu te poti scoate singur din factiune din panel."}
+    if str(target_profile.get("factiune", "Civil")) != my_faction:
+        return {"ok": False, "msg": "Poti scoate doar membri din factiunea ta."}
+
+    ok_user, _, err_user = _firebase_patch(
+        f"users/{_safe_path(target)}",
+        {"factiune": "Civil", "rank": 0},
+        auth_token=auth_token,
+    )
+    if not ok_user:
+        return {"ok": False, "msg": err_user}
+
+    firebase_write(
+        f"panel/faction_leaders/{_safe_path(my_faction)}/{_safe_path(target)}",
+        {},
+        "PUT",
+        auth_token=auth_token,
+    )
+
+    _send_roblox_command(username, "SetFaction", target, "Civil", "0")
+    _log_faction_event(
+        my_faction,
+        username,
+        target,
+        "member_removed",
+        auth_token=auth_token,
+        note=reason or "Fara motiv oferit.",
+    )
+    return {"ok": True, "msg": f"{target} a fost scos din {my_faction}."}
 
 
 def _handle_buy_shop_item(identity: dict, users: dict, body: dict):
@@ -1019,6 +1214,16 @@ class handler(BaseHTTPRequestHandler):
 
         if action == "warn_member":
             payload = _handle_warn_member(identity, users, body)
+            send_json(self, 200 if payload.get("ok") else 400, payload)
+            return
+
+        if action == "set_member_rank":
+            payload = _handle_set_member_rank(identity, users, body)
+            send_json(self, 200 if payload.get("ok") else 400, payload)
+            return
+
+        if action == "remove_member":
+            payload = _handle_remove_member(identity, users, body)
             send_json(self, 200 if payload.get("ok") else 400, payload)
             return
 
