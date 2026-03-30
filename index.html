@@ -1046,41 +1046,100 @@
         toast: true, position: 'top-end', showConfirmButton: false,
         timer: 3000, timerProgressBar: true, background: '#111827', color: '#e2e8f0'
     });
+    const PAGE_ROUTES = {
+        dash: "/dashboard",
+        profile: "/profile",
+        garage: "/garage",
+        properties: "/properties",
+        notifications: "/notifications",
+        players: "/players",
+        factions: "/factions",
+        ppshop: "/ppshop",
+        reports: "/reports",
+    };
+    const ROUTE_TO_PAGE = Object.fromEntries(Object.entries(PAGE_ROUTES).map(([page, path]) => [path, page]));
+    const PAGE_TITLES = {
+        dash: "Dashboard",
+        profile: "Profilul Meu",
+        garage: "Garage",
+        properties: "Properties",
+        notifications: "Notifications",
+        players: "Jucători",
+        factions: "Faction Hub",
+        ppshop: "PP Shop",
+        reports: "Reclamații",
+    };
 
     function fmt(n) { return Number(n||0).toLocaleString('ro-RO'); }
 
     // ---- NAVIGATION ----
-    window.goPage = function(page) {
+    function normalizePanelPage(page) {
+        const raw = String(page || "").trim().toLowerCase();
+        return PAGE_ROUTES[raw] ? raw : "dash";
+    }
+
+    function pathForPage(page) {
+        return PAGE_ROUTES[normalizePanelPage(page)] || "/dashboard";
+    }
+
+    function pageFromLocation() {
+        const path = String(window.location.pathname || "/").replace(/\/+$/, "") || "/";
+        if (path === "/") return "dash";
+        return ROUTE_TO_PAGE[path] || "dash";
+    }
+
+    function updatePageMeta(page) {
+        const label = PAGE_TITLES[page] || "Panel";
+        document.title = `SEVID RP - ${label}`;
+    }
+
+    window.goPage = function(page, options = {}) {
+        const normalizedPage = normalizePanelPage(page);
+        const targetPath = pathForPage(normalizedPage);
+        const useHistory = options?.history !== false;
+        const replaceHistory = !!options?.replace;
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('page-' + page).classList.add('active');
-        document.querySelector(`[data-page="${page}"]`).classList.add('active');
+        document.getElementById('page-' + normalizedPage).classList.add('active');
+        document.querySelector(`[data-page="${normalizedPage}"]`).classList.add('active');
+        if (useHistory && window.location.pathname !== targetPath) {
+            const method = replaceHistory ? "replaceState" : "pushState";
+            window.history[method]({ page: normalizedPage }, "", targetPath);
+        } else if (replaceHistory) {
+            window.history.replaceState({ page: normalizedPage }, "", targetPath);
+        }
+        updatePageMeta(normalizedPage);
         if (factionHubInterval) {
             clearInterval(factionHubInterval);
             factionHubInterval = null;
         }
-        if(page === 'factions') {
+        if(normalizedPage === 'factions') {
             loadFactions();
             refreshFactionHub();
             factionHubInterval = setInterval(() => {
                 refreshFactionHub();
             }, 15000);
         }
-        if(page === 'ppshop') {
+        if(normalizedPage === 'ppshop') {
             refreshPPShop();
         }
-        if(page === 'garage') {
+        if(normalizedPage === 'garage') {
             renderGaragePage(currentProfileData);
         }
-        if(page === 'properties') {
+        if(normalizedPage === 'properties') {
             renderPropertiesPage(currentProfileData);
         }
-        if(page === 'notifications') {
+        if(normalizedPage === 'notifications') {
             renderNotificationsPage();
             refreshFactionHub();
             refreshPPShop();
         }
     }
+
+    window.addEventListener('popstate', () => {
+        if (!currentUser) return;
+        window.goPage(pageFromLocation(), { history: false });
+    });
 
     window.showCard = function(id) {
         document.querySelectorAll('.auth-card').forEach(c => c.style.display = 'none');
@@ -1118,6 +1177,7 @@
                 renderShopItems();
                 await refreshFactionHub();
                 await refreshPPShop();
+                window.goPage(pageFromLocation(), { history: false, replace: true });
             }
         } else {
             loading.style.display = 'none';
