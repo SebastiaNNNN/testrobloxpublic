@@ -984,6 +984,13 @@
         const ownedHouse = Number(profile?.casa_detinuta || 0);
         const rentedHouse = Number(profile?.casa_inchiriata || 0);
         const spawnPref = String(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
+        const ownedLocked = !!profile?.casa_detinuta_inchisa;
+        const ownedRentable = !!profile?.casa_detinuta_chirie_activata;
+        const ownedRentPrice = Number(profile?.casa_detinuta_pret_chirie || 0);
+        const ownedSafe = Number(profile?.casa_detinuta_sold_seif || 0);
+        const ownedTenants = Number(profile?.casa_detinuta_chiriasi || 0);
+        const rentedPrice = Number(profile?.casa_inchiriata_pret_chirie || 0);
+        const rentedOwner = String(profile?.casa_inchiriata_owner || '').trim();
 
         grid.innerHTML = `
             <div class="overview-card">
@@ -1012,18 +1019,20 @@
         propertyPreview.innerHTML = `
             <div class="property-card">
                 <h3>${ownedHouse > 0 ? `Casa #${ownedHouse}` : 'Nicio casa detinuta'}</h3>
-                <p>${ownedHouse > 0 ? 'Casa ta e sincronizata in profilul panelului si apare imediat in overview.' : 'Cand iti cumperi casa in joc, o afisam aici instant in panel.'}</p>
+                <p>${ownedHouse > 0 ? `Casa ta este ${ownedLocked ? 'incuiata' : 'descuiata'}, iar seiful are $${fmt(ownedSafe)}.` : 'Cand iti cumperi casa in joc, o afisam aici instant in panel.'}</p>
                 <div class="garage-card-meta">
                     <span class="badge ${ownedHouse > 0 ? 'badge-green' : 'badge-gray'}">${ownedHouse > 0 ? 'Owned' : 'No property'}</span>
                     <span class="badge badge-blue">Spawn: ${safeHtml(spawnPref)}</span>
+                    <span class="badge ${ownedLocked ? 'badge-red' : 'badge-green'}">${ownedLocked ? 'Locked' : 'Unlocked'}</span>
                 </div>
             </div>
             <div class="property-card">
                 <h3>${rentedHouse > 0 ? `Chirie #${rentedHouse}` : 'Fara chirie activa'}</h3>
-                <p>${rentedHouse > 0 ? 'Ai o proprietate inchiriata activa. O afisam separat fata de casa detinuta.' : 'Daca inchiriezi o casa in joc, o vom afisa aici dupa sync-ul nou.'}</p>
+                <p>${rentedHouse > 0 ? `Platesti $${fmt(rentedPrice)} chirie catre ${safeHtml(rentedOwner || 'proprietar necunoscut')}.` : `Chiria proprietatii tale este ${ownedRentable ? 'activa' : 'oprita'}${ownedRentable && ownedRentPrice > 0 ? ` la $${fmt(ownedRentPrice)}` : ''}.`}</p>
                 <div class="garage-card-meta">
                     <span class="badge ${rentedHouse > 0 ? 'badge-orange' : 'badge-gray'}">${rentedHouse > 0 ? 'Rented' : 'No rent'}</span>
-                    <span class="badge badge-gray">Slots: ${slots || 0}</span>
+                    <span class="badge badge-gray">${ownedTenants} chiriasi</span>
+                    <span class="badge ${ownedRentable ? 'badge-green' : 'badge-gray'}">${ownedRentable ? 'Rent ON' : 'Rent OFF'}</span>
                 </div>
             </div>
         `;
@@ -1063,6 +1072,13 @@
         const rentedHouse = Number(profile?.casa_inchiriata || 0);
         const spawnPref = String(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
         const slots = Number(profile?.sloturi_garaj || 0);
+        const ownedLocked = !!profile?.casa_detinuta_inchisa;
+        const ownedRentable = !!profile?.casa_detinuta_chirie_activata;
+        const ownedRentPrice = Number(profile?.casa_detinuta_pret_chirie || 0);
+        const ownedSafe = Number(profile?.casa_detinuta_sold_seif || 0);
+        const ownedTenants = Number(profile?.casa_detinuta_chiriasi || 0);
+        const rentedPrice = Number(profile?.casa_inchiriata_pret_chirie || 0);
+        const rentedOwner = String(profile?.casa_inchiriata_owner || '').trim();
         const hasExtendedSync = ownedHouse > 0 || rentedHouse > 0 || spawnPref !== 'Spawn';
 
         summary.innerHTML = `
@@ -1082,9 +1098,9 @@
                 <div class="overview-note">Pe ce punct important vrei sa intri in joc.</div>
             </div>
             <div class="overview-card">
-                <div class="overview-label">Sloturi Garaj</div>
-                <div class="overview-value">${slots}</div>
-                <div class="overview-note">Le legam aici fiind parte din ecosistemul proprietatii.</div>
+                <div class="overview-label">Seif Casa</div>
+                <div class="overview-value">$${fmt(ownedSafe)}</div>
+                <div class="overview-note">${ownedTenants} chiriasi activi pe proprietatea ta.</div>
             </div>
         `;
 
@@ -1092,28 +1108,32 @@
             <div class="property-card">
                 <h3>${ownedHouse > 0 ? `Casa #${ownedHouse}` : 'Proprietar inactiv'}</h3>
                 <p>${ownedHouse > 0
-                    ? 'Panelul iti arata instant ce casa detii si iti lasa loc pentru viitoarele detalii de chirie, seif si chiriasi.'
+                    ? `Casa este ${ownedLocked ? 'incuiata' : 'descuiata'}, are ${ownedTenants} chiriasi si $${fmt(ownedSafe)} in seif.`
                     : 'Inca nu exista o casa detinuta pe cont. Dupa prima achizitie, cardul asta devine hub-ul tau de locuinta.'}</p>
                 <div class="garage-card-meta">
                     <span class="badge ${ownedHouse > 0 ? 'badge-green' : 'badge-gray'}">${ownedHouse > 0 ? 'Owned house' : 'No owned house'}</span>
                     <span class="badge badge-blue">Spawn: ${safeHtml(spawnPref)}</span>
+                    <span class="badge ${ownedLocked ? 'badge-red' : 'badge-green'}">${ownedLocked ? 'Locked' : 'Unlocked'}</span>
                 </div>
             </div>
             <div class="property-card">
                 <h3>${rentedHouse > 0 ? `Chirie #${rentedHouse}` : 'Status chirie'}</h3>
                 <p>${rentedHouse > 0
-                    ? 'Ai o chirie activa. Aici putem extinde mai departe cu rent price, warnings si safe balance dupa urmatorul sync din joc.'
-                    : 'Nu ai chirie activa. Dupa sync-ul nou, panelul poate afisa si chiria separata de casa detinuta.'}</p>
+                    ? `Chiria ta este $${fmt(rentedPrice)} si proprietarul inregistrat este ${safeHtml(rentedOwner || 'necunoscut')}.`
+                    : ownedHouse > 0
+                        ? `Chiria pentru casa ta este ${ownedRentable ? 'pornita' : 'oprita'}${ownedRentPrice > 0 ? ` la $${fmt(ownedRentPrice)}` : ''}.`
+                        : 'Nu ai chirie activa. Dupa sync-ul nou, panelul poate afisa si chiria separata de casa detinuta.'}</p>
                 <div class="garage-card-meta">
                     <span class="badge ${rentedHouse > 0 ? 'badge-orange' : 'badge-gray'}">${rentedHouse > 0 ? 'Rented' : 'No active rent'}</span>
+                    <span class="badge ${ownedRentable ? 'badge-green' : 'badge-gray'}">${ownedRentable ? 'Rent ON' : 'Rent OFF'}</span>
                     <span class="badge badge-gray">${hasExtendedSync ? 'Live sync enabled' : 'Waiting for next sync'}</span>
                 </div>
             </div>
             <div class="property-card">
-                <h3>Ce urmeaza aici</h3>
-                <p>Structura e pregatita pentru rent price, safe balance, chiriasi si preferinta de spawn. Pentru astea am nevoie de sync-ul extins publicat din Rojo, exact cum am facut la factiuni live.</p>
+                <h3>Property Ecosystem</h3>
+                <p>Sloturi garaj: ${slots}. Aici poti vedea tot lantul casei: spawn, chirie, seif si relatia cu masina sau cu chiriasii.</p>
                 <div class="garage-card-meta">
-                    <span class="badge badge-blue">Ready to extend</span>
+                    <span class="badge badge-blue">Garage slots: ${slots}</span>
                 </div>
             </div>
         `;
