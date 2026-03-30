@@ -228,6 +228,13 @@
         .badge-orange { background: rgba(251,146,60,0.15); color: #fb923c; }
         .badge-red { background: rgba(248,113,113,0.15); color: #f87171; }
         .badge-gray { background: rgba(100,116,139,0.2); color: #94a3b8; }
+        .badge-color { display:inline-flex; align-items:center; gap:8px; }
+        .color-inline { display:inline-flex; align-items:center; gap:10px; }
+        .color-swatch {
+            width: 12px; height: 12px; border-radius: 999px; display:inline-block; flex-shrink:0;
+            border: 1px solid rgba(255,255,255,0.18); box-shadow: 0 0 0 1px rgba(15,23,42,0.35) inset;
+        }
+        .color-swatch.lg { width: 14px; height: 14px; }
 
         /* ---- SEARCH BAR ---- */
         .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
@@ -1421,6 +1428,7 @@
         if (raw === 'spawned') return { label: 'Spawned', badge: 'badge-blue', tone: 'In oras' };
         if (raw === 'stored') return { label: 'Stored', badge: 'badge-green', tone: 'In garaj' };
         if (raw === 'broken') return { label: 'Broken', badge: 'badge-red', tone: 'Necesita repair' };
+        if (raw === 'fixed') return { label: 'Fixed', badge: 'badge-green', tone: 'New - DS bought' };
         if (!raw) return { label: 'Necunoscut', badge: 'badge-gray', tone: 'Fara status' };
         return { label: String(status), badge: 'badge-gray', tone: 'Status custom' };
     }
@@ -1429,8 +1437,109 @@
         return Array.isArray(profile?.masini) ? profile.masini : [];
     }
 
+    const COLOR_PALETTE = [
+        { label: 'White', rgb: [240, 240, 240] },
+        { label: 'Silver', rgb: [192, 192, 192] },
+        { label: 'Gray', rgb: [128, 128, 128] },
+        { label: 'Black', rgb: [25, 25, 25] },
+        { label: 'Blue', rgb: [35, 168, 255] },
+        { label: 'Sky Blue', rgb: [100, 196, 255] },
+        { label: 'Teal', rgb: [0, 170, 170] },
+        { label: 'Green', rgb: [40, 190, 90] },
+        { label: 'Lime', rgb: [120, 220, 70] },
+        { label: 'Yellow', rgb: [245, 214, 70] },
+        { label: 'Orange', rgb: [245, 140, 40] },
+        { label: 'Red', rgb: [220, 55, 55] },
+        { label: 'Pink', rgb: [240, 120, 190] },
+        { label: 'Purple', rgb: [140, 80, 200] },
+        { label: 'Brown', rgb: [120, 78, 52] },
+        { label: 'Beige', rgb: [214, 194, 160] }
+    ];
+
+    const COLOR_NAME_MAP = COLOR_PALETTE.reduce((acc, entry) => {
+        acc[entry.label.toLowerCase()] = entry;
+        return acc;
+    }, {});
+
+    function parseRgbColor(color) {
+        const text = String(color || '').trim();
+        if (!text) return null;
+        const rgbMatch = text.match(/^(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})$/);
+        if (rgbMatch) {
+            return rgbMatch.slice(1).map((value) => Math.max(0, Math.min(255, Number(value))));
+        }
+        const hexMatch = text.match(/^#?([0-9a-f]{6})$/i);
+        if (hexMatch) {
+            const hex = hexMatch[1];
+            return [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+        }
+        const byName = COLOR_NAME_MAP[text.toLowerCase()];
+        return byName ? byName.rgb.slice() : null;
+    }
+
+    function closestPaletteLabel(rgb) {
+        if (!rgb) return 'Necunoscuta';
+        let best = COLOR_PALETTE[0];
+        let bestDistance = Number.POSITIVE_INFINITY;
+        COLOR_PALETTE.forEach((entry) => {
+            const dist = Math.sqrt(
+                ((rgb[0] - entry.rgb[0]) ** 2) +
+                ((rgb[1] - entry.rgb[1]) ** 2) +
+                ((rgb[2] - entry.rgb[2]) ** 2)
+            );
+            if (dist < bestDistance) {
+                bestDistance = dist;
+                best = entry;
+            }
+        });
+        return best.label;
+    }
+
+    function colorMeta(color) {
+        const text = String(color || '').trim();
+        if (!text) {
+            return { label: 'Necunoscuta', style: 'background: linear-gradient(135deg, #334155, #1f2937);' };
+        }
+        const rgb = parseRgbColor(text);
+        if (rgb) {
+            return {
+                label: closestPaletteLabel(rgb),
+                style: `background: rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]});`
+            };
+        }
+        const normalized = text.toLowerCase();
+        const nameHit = COLOR_NAME_MAP[normalized];
+        if (nameHit) {
+            return {
+                label: nameHit.label,
+                style: `background: rgb(${nameHit.rgb[0]}, ${nameHit.rgb[1]}, ${nameHit.rgb[2]});`
+            };
+        }
+        const pretty = text.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+        return {
+            label: pretty,
+            style: 'background: linear-gradient(135deg, #475569, #334155);'
+        };
+    }
+
+    function renderColorBadge(color) {
+        const meta = colorMeta(color);
+        return `<span class="badge badge-blue badge-color"><span class="color-swatch" style="${meta.style}"></span><span>${safeHtml(meta.label)}</span></span>`;
+    }
+
+    function renderColorValue(color) {
+        const meta = colorMeta(color);
+        return `<span class="color-inline"><span class="color-swatch lg" style="${meta.style}"></span><span>${safeHtml(meta.label)}</span></span>`;
+    }
+
     function carColorLabel(color) {
-        return String(color || '').trim() || 'Necunoscuta';
+        return colorMeta(color).label;
+    }
+
+    function carRimLabel(car) {
+        const rim = String(car?.rim || car?.jante || car?.equipped_rim || '').trim();
+        if (!rim) return 'Stock';
+        return rim.toLowerCase() === 'stock' ? 'Stock' : rim;
     }
 
     function normalizeSpawnPreference(value) {
@@ -1496,7 +1605,8 @@
                     </div>
                     <div class="garage-card-meta">
                         <span class="badge badge-gray">${safeHtml(status.tone)}</span>
-                        <span class="badge badge-blue">${safeHtml(carColorLabel(car.culoare))}</span>
+                        ${renderColorBadge(car.culoare)}
+                        <span class="badge badge-gray">Jante: ${safeHtml(carRimLabel(car))}</span>
                     </div>
                     <div class="garage-specs">
                         <div class="garage-spec">
@@ -1505,7 +1615,11 @@
                         </div>
                         <div class="garage-spec">
                             <div class="k">Culoare</div>
-                            <div class="v">${safeHtml(carColorLabel(car.culoare))}</div>
+                            <div class="v">${renderColorValue(car.culoare)}</div>
+                        </div>
+                        <div class="garage-spec">
+                            <div class="k">Jante echipate</div>
+                            <div class="v">${safeHtml(carRimLabel(car))}</div>
                         </div>
                         <div class="garage-spec">
                             <div class="k">Nume intern</div>
@@ -1546,7 +1660,8 @@
                     </div>
                     <div class="garage-card-meta">
                         <span class="badge badge-gray">${safeHtml(status.tone)}</span>
-                        <span class="badge badge-blue">${safeHtml(carColorLabel(car.culoare))}</span>
+                        ${renderColorBadge(car.culoare)}
+                        <span class="badge badge-gray">Jante: ${safeHtml(carRimLabel(car))}</span>
                     </div>
                     <div class="garage-specs">
                         <div class="garage-spec">
@@ -1555,7 +1670,11 @@
                         </div>
                         <div class="garage-spec">
                             <div class="k">Culoare</div>
-                            <div class="v">${safeHtml(carColorLabel(car.culoare))}</div>
+                            <div class="v">${renderColorValue(car.culoare)}</div>
+                        </div>
+                        <div class="garage-spec">
+                            <div class="k">Jante echipate</div>
+                            <div class="v">${safeHtml(carRimLabel(car))}</div>
                         </div>
                         <div class="garage-spec">
                             <div class="k">Nume intern</div>
@@ -1613,7 +1732,8 @@
                     <div class="garage-focus-sub">${focusModel} | ${note}</div>
                     <div class="garage-card-meta" style="margin-top:14px;">
                         <span class="badge ${status.badge}">${safeHtml(status.label)}</span>
-                        <span class="badge badge-blue">${safeHtml(carColorLabel(car?.culoare))}</span>
+                        ${renderColorBadge(car?.culoare)}
+                        <span class="badge badge-gray">Jante: ${safeHtml(carRimLabel(car))}</span>
                         <span class="badge badge-gray">Slot ${selectedGarageCarIndex + 1}</span>
                         <span class="badge badge-gray">${safeHtml(houseLabel)}</span>
                     </div>
@@ -1627,7 +1747,8 @@
                 <div class="garage-focus-stat"><div class="k">Kilometraj</div><div class="v">${fmt(carKm)} km</div></div>
                 <div class="garage-focus-stat"><div class="k">Cota din fleet</div><div class="v">${fleetShare}%</div></div>
                 <div class="garage-focus-stat"><div class="k">Status live</div><div class="v">${safeHtml(status.tone)}</div></div>
-                <div class="garage-focus-stat"><div class="k">Culoare</div><div class="v">${safeHtml(carColorLabel(car?.culoare))}</div></div>
+                <div class="garage-focus-stat"><div class="k">Culoare</div><div class="v">${renderColorValue(car?.culoare)}</div></div>
+                <div class="garage-focus-stat"><div class="k">Jante echipate</div><div class="v">${safeHtml(carRimLabel(car))}</div></div>
             </div>
         `;
     }
