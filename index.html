@@ -735,8 +735,8 @@
 <!-- JUCATORI -->
         <div class="page" id="page-players">
             <div class="page-header">
-                <h1>Jucători</h1>
-                <p>Caută orice jucător de pe server</p>
+                <h1 id="players-page-title">Jucători</h1>
+                <p id="players-page-sub">Caută orice jucător de pe server</p>
             </div>
             <div class="card">
                 <div class="search-bar">
@@ -771,6 +771,38 @@
                     <div class="kv-item"><div class="k">RP Points</div><div class="v" id="pd-rp">0</div></div>
                     <div class="kv-item"><div class="k">Mașini</div><div class="v" id="pd-cars">0</div></div>
                     <div class="kv-item"><div class="k">Last Online</div><div class="v" id="pd-seen">—</div></div>
+                    <div class="kv-item"><div class="k">Property</div><div class="v" id="pd-house">—</div></div>
+                    <div class="kv-item"><div class="k">De Când Joacă</div><div class="v" id="pd-since">—</div></div>
+                    <div class="kv-item"><div class="k">Slot Garaj</div><div class="v" id="pd-slots">0</div></div>
+                </div>
+                <div class="card" style="margin-top:18px;margin-bottom:0;padding:18px;">
+                    <div class="section-row">
+                        <div>
+                            <div class="card-title" style="margin-bottom:6px"><i class="fas fa-bolt"></i> Dosar Public</div>
+                            <div class="section-sub">Snapshot curat pentru activitate, proprietăți și vehicule, fără economie publică.</div>
+                        </div>
+                    </div>
+                    <div class="overview-grid" id="pd-overview-grid"></div>
+                </div>
+                <div class="split-2" style="margin-top:18px;">
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="section-row">
+                            <div>
+                                <div class="card-title" style="margin-bottom:6px"><i class="fas fa-car-side"></i> Garage Public</div>
+                                <div class="section-sub">Vehiculele vizibile în profilul public al jucătorului.</div>
+                            </div>
+                        </div>
+                        <div class="garage-grid" id="pd-garage-preview"></div>
+                    </div>
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="section-row">
+                            <div>
+                                <div class="card-title" style="margin-bottom:6px"><i class="fas fa-key"></i> Property Public</div>
+                                <div class="section-sub">Casa, chiria și spawn preference-ul pe care le putem expune public.</div>
+                            </div>
+                        </div>
+                        <div class="property-grid" id="pd-property-preview"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1231,6 +1263,7 @@
     function clearPlayerRouteDetail() {
         const detail = document.getElementById("player-detail");
         if (detail) detail.style.display = "none";
+        updatePlayersHeader();
     }
 
     function clearFactionRouteDetail() {
@@ -1414,6 +1447,83 @@
             .filter(Boolean);
     }
 
+    function updatePlayersHeader(playerName = "") {
+        const title = document.getElementById("players-page-title");
+        const sub = document.getElementById("players-page-sub");
+        if (!title || !sub) return;
+        if (playerName) {
+            title.textContent = `Profil Public: ${playerName}`;
+            sub.textContent = "Pagina publică a jucătorului, cu activitate, vehicule și proprietăți vizibile în panel.";
+            return;
+        }
+        title.textContent = "Jucători";
+        sub.textContent = "Caută orice jucător de pe server";
+    }
+
+    function playerSinceLabel(profile) {
+        const dateKeys = ["created_at", "registered_at", "joined_at", "first_join_at", "first_join", "account_created_at"];
+        for (const key of dateKeys) {
+            const value = profile?.[key];
+            if (typeof value === "number" && value > 0) {
+                return fmtDate(value);
+            }
+            const text = String(value || "").trim();
+            if (text) {
+                return text;
+            }
+        }
+        return "Necunoscut";
+    }
+
+    function buildPublicGarageCards(cars, limit = 0) {
+        const visibleCars = limit > 0 ? cars.slice(0, limit) : cars;
+        if (!visibleCars.length) {
+            return `<div class="empty-panel" style="grid-column:1 / -1;">Jucătorul nu are mașini sincronizate public.</div>`;
+        }
+
+        return visibleCars.map((car, index) => {
+            const status = getCarStatusMeta(car.status);
+            const carName = safeHtml(car.nume || `Masina ${index + 1}`);
+            const model = safeHtml(car.model || "Model necunoscut");
+            return `
+                <div class="garage-card">
+                    <div class="garage-card-top">
+                        <div>
+                            <div class="garage-card-name">${carName}</div>
+                            <div class="garage-card-model">${model}</div>
+                        </div>
+                        <span class="badge ${status.badge}">${safeHtml(status.label)}</span>
+                    </div>
+                    <div class="garage-card-meta">
+                        <span class="badge badge-gray">${safeHtml(status.tone)}</span>
+                        <span class="badge badge-blue">${safeHtml(carColorLabel(car.culoare))}</span>
+                    </div>
+                    <div class="garage-specs">
+                        <div class="garage-spec">
+                            <div class="k">Kilometraj</div>
+                            <div class="v">${fmt(car.km || 0)} km</div>
+                        </div>
+                        <div class="garage-spec">
+                            <div class="k">Culoare</div>
+                            <div class="v">${safeHtml(carColorLabel(car.culoare))}</div>
+                        </div>
+                        <div class="garage-spec">
+                            <div class="k">Nume intern</div>
+                            <div class="v">${carName}</div>
+                        </div>
+                        <div class="garage-spec">
+                            <div class="k">Model joc</div>
+                            <div class="v">${model}</div>
+                        </div>
+                    </div>
+                    <div class="garage-action-row">
+                        <span class="badge badge-gray">Dosar public</span>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
     function buildGarageCards(cars, limit = 0, interactive = false) {
         const visibleCars = limit > 0 ? cars.slice(0, limit) : cars;
         if (!visibleCars.length) {
@@ -1583,6 +1693,86 @@
                     <span class="badge ${rentedHouse > 0 ? 'badge-orange' : 'badge-gray'}">${rentedHouse > 0 ? 'Rented' : 'No rent'}</span>
                     <span class="badge badge-gray">${ownedTenants} chiriasi</span>
                     <span class="badge ${ownedRentable ? 'badge-green' : 'badge-gray'}">${ownedRentable ? 'Rent ON' : 'Rent OFF'}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderPublicPlayerDetail(username, profile) {
+        const overviewGrid = document.getElementById("pd-overview-grid");
+        const garagePreview = document.getElementById("pd-garage-preview");
+        const propertyPreview = document.getElementById("pd-property-preview");
+        if (!overviewGrid || !garagePreview || !propertyPreview) return;
+
+        const cars = carsFromProfile(profile);
+        const slots = Math.max(Number(profile?.sloturi_garaj || 0), 0);
+        const ownedHouse = Number(profile?.casa_detinuta || 0);
+        const rentedHouse = Number(profile?.casa_inchiriata || 0);
+        const spawnPref = normalizeSpawnPreference(profile?.spawn_preferat || profile?.spawn_actual || "Spawn");
+        const ownedLocked = !!profile?.casa_detinuta_inchisa;
+        const ownedRentable = !!profile?.casa_detinuta_chirie_activata;
+        const ownedRentPrice = Number(profile?.casa_detinuta_pret_chirie || 0);
+        const ownedTenants = Number(profile?.casa_detinuta_chiriasi || 0);
+        const rentedPrice = Number(profile?.casa_inchiriata_pret_chirie || 0);
+        const rentedOwner = String(profile?.casa_inchiriata_owner || "").trim();
+        const topModel = cars.length
+            ? Object.entries(cars.reduce((acc, car) => {
+                const key = String(car?.model || "Necunoscut");
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {})).sort((a, b) => b[1] - a[1])[0]?.[0] || "-"
+            : "-";
+
+        updatePlayersHeader(username);
+        document.getElementById("pd-house").innerText = ownedHouse > 0
+            ? `Casa #${ownedHouse}`
+            : rentedHouse > 0
+                ? `Chirie #${rentedHouse}`
+                : "—";
+        document.getElementById("pd-since").innerText = playerSinceLabel(profile);
+        document.getElementById("pd-slots").innerText = slots;
+
+        overviewGrid.innerHTML = `
+            <div class="overview-card">
+                <div class="overview-label">Status Locuință</div>
+                <div class="overview-value">${ownedHouse > 0 ? `Casa #${ownedHouse}` : rentedHouse > 0 ? `Chirie #${rentedHouse}` : "Fără casă"}</div>
+                <div class="overview-note">${ownedHouse > 0 ? "Jucătorul are proprietate proprie în joc." : rentedHouse > 0 ? "Jucătorul stă cu chirie în prezent." : "Nicio proprietate activă sincronizată."}</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Spawn Preference</div>
+                <div class="overview-value">${safeHtml(spawnPref)}</div>
+                <div class="overview-note">${spawnPref === "House" ? "Preferă să intre direct la casă." : "Preferă spawn-ul public la login."}</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Fleet Overview</div>
+                <div class="overview-value">${cars.length} mașini</div>
+                <div class="overview-note">Model dominant: ${safeHtml(topModel)} | ${slots} sloturi garaj.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Activitate</div>
+                <div class="overview-value">${Number(profile?.ore_jucate || 0)}h</div>
+                <div class="overview-note">Last online: ${safeHtml(profile?.last_online || "—")}</div>
+            </div>
+        `;
+
+        garagePreview.innerHTML = buildPublicGarageCards(cars, 3);
+        propertyPreview.innerHTML = `
+            <div class="property-card">
+                <h3>${ownedHouse > 0 ? `Casa #${ownedHouse}` : "Nicio casă deținută"}</h3>
+                <p>${ownedHouse > 0 ? `Proprietatea este ${ownedLocked ? "încuiată" : "descuiată"} și are ${ownedTenants} chiriași activi în acest moment.` : "Jucătorul nu are casă proprie sincronizată public."}</p>
+                <div class="garage-card-meta">
+                    <span class="badge ${ownedHouse > 0 ? "badge-green" : "badge-gray"}">${ownedHouse > 0 ? "Owned" : "No property"}</span>
+                    <span class="badge badge-blue">Spawn: ${safeHtml(spawnPref)}</span>
+                    <span class="badge ${ownedLocked ? "badge-red" : "badge-green"}">${ownedLocked ? "Locked" : "Unlocked"}</span>
+                </div>
+            </div>
+            <div class="property-card">
+                <h3>${rentedHouse > 0 ? `Chirie #${rentedHouse}` : "Status chirie"}</h3>
+                <p>${rentedHouse > 0 ? `Plătește $${fmt(rentedPrice)} chirie către ${safeHtml(rentedOwner || "proprietar necunoscut")}.` : ownedHouse > 0 ? `Chiria pe proprietatea lui este ${ownedRentable ? "activă" : "oprită"}${ownedRentable && ownedRentPrice > 0 ? ` la $${fmt(ownedRentPrice)}` : ""}.` : "Fără chirie activă în momentul ăsta."}</p>
+                <div class="garage-card-meta">
+                    <span class="badge ${rentedHouse > 0 ? "badge-orange" : "badge-gray"}">${rentedHouse > 0 ? "Rented" : "No rent"}</span>
+                    <span class="badge badge-gray">${ownedTenants} chiriași</span>
+                    <span class="badge ${ownedRentable ? "badge-green" : "badge-gray"}">${ownedRentable ? "Rent ON" : "Rent OFF"}</span>
                 </div>
             </div>
         `;
@@ -2034,6 +2224,7 @@
         const body = document.getElementById('players-body');
         const detail = document.getElementById('player-detail');
         detail.style.display = 'none';
+        updatePlayersHeader();
         updateRouteState('players', {}, { history: true, replace: true });
         if (!q) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Scrie un nume pentru a căuta.</td></tr>'; return; }
         const results = Object.entries(allUsers)
@@ -2072,6 +2263,7 @@
         const cars = Array.isArray(d.masini) ? d.masini : [];
         document.getElementById('pd-cars').innerText = cars.length;
         document.getElementById('pd-seen').innerText = d.last_online || '—';
+        renderPublicPlayerDetail(resolvedName, d);
         updateRouteState('players', { playerName: resolvedName }, options);
         if (options.scroll !== false) {
             document.getElementById('player-detail').scrollIntoView({ behavior: 'smooth' });
