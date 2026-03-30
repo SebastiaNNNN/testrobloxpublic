@@ -23,8 +23,17 @@
         .swal2-title { color: #fff !important; font-weight: 800 !important; text-transform: uppercase; letter-spacing: 1px; }
         .swal2-html-container { color: #94a3b8 !important; }
         .swal2-confirm { background: linear-gradient(135deg, #00ff88, #00c2ff) !important; color: #000 !important; font-weight: 700 !important; border-radius: 10px !important; }
+        .swal2-cancel { background: rgba(148,163,184,0.15) !important; color: #e2e8f0 !important; border-radius: 10px !important; }
         .swal2-timer-progress-bar { background: #00ff88 !important; }
         div.swal2-container { z-index: 99999 !important; }
+        .swal2-input, .swal2-textarea {
+            background: rgba(255,255,255,0.04) !important;
+            color: #e2e8f0 !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 14px !important;
+            box-shadow: none !important;
+        }
+        .swal2-input:focus, .swal2-textarea:focus { border-color: rgba(0,255,136,0.45) !important; }
 
         /* ---- LOADING ---- */
         #loading-screen {
@@ -101,14 +110,15 @@
         .auth-card h2 { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 24px; display:flex; align-items:center; gap:10px; }
         .field { margin-bottom: 16px; }
         .field label { display:block; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; font-weight: 600; }
-        .field input {
+        .field input, .field textarea {
             width: 100%; padding: 13px 14px; border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
             color: #e2e8f0; font-size: 14px; outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .field input:focus { border-color: rgba(0,255,136,0.5); box-shadow: 0 0 0 3px rgba(0,255,136,0.1); }
-        .field input::placeholder { color: #475569; }
+        .field textarea { resize: vertical; min-height: 110px; font-family: inherit; }
+        .field input:focus, .field textarea:focus { border-color: rgba(0,255,136,0.5); box-shadow: 0 0 0 3px rgba(0,255,136,0.1); }
+        .field input::placeholder, .field textarea::placeholder { color: #475569; }
         .auth-btn {
             width: 100%; padding: 14px; border-radius: 13px; border: none; cursor: pointer;
             background: linear-gradient(135deg, #00ff88, #00c2ff); color: #0d111a;
@@ -336,6 +346,12 @@
         .leader-pane {
             background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:16px;
         }
+        .leader-settings-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; margin-top:14px; }
+        .leader-settings-wide { grid-column: 1 / -1; }
+        .leader-settings-meta {
+            color:#94a3b8; font-size:12px; line-height:1.5;
+            background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px 14px;
+        }
         .leader-search-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
         .leader-search-row input, .leader-search-row select {
             flex:1; min-width:160px; padding:11px 14px; border-radius:11px; border:1px solid rgba(255,255,255,0.08);
@@ -358,6 +374,22 @@
         .leader-detail-block .v { color:#e2e8f0; font-size:14px; font-weight:700; margin-top:6px; line-height:1.55; white-space:pre-wrap; word-break:break-word; }
         .leader-action-strip { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
         .leader-log-note { color:#cbd5e1; font-size:12px; line-height:1.45; }
+        .leader-profile-header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+        .leader-profile-badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+        .leader-profile-sections { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; margin-top:16px; }
+        .leader-profile-section {
+            background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px;
+        }
+        .leader-profile-section h4 {
+            color:#fff; font-size:13px; font-weight:800; margin-bottom:10px; letter-spacing:0.04em; text-transform:uppercase;
+        }
+        .leader-mini-timeline { display:flex; flex-direction:column; gap:8px; }
+        .leader-mini-item {
+            background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:10px 12px;
+        }
+        .leader-mini-item strong { color:#fff; font-size:13px; }
+        .leader-mini-item p { margin-top:6px; color:#cbd5e1; font-size:12px; line-height:1.45; }
+        .leader-mini-item span { display:block; margin-top:6px; color:#64748b; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; }
         .empty-panel {
             border:1px dashed rgba(255,255,255,0.12); border-radius:14px; padding:28px; text-align:center; color:#64748b; font-size:13px;
         }
@@ -421,7 +453,9 @@
             .property-detail-grid { grid-template-columns: 1fr; }
             .leader-detail-grid { grid-template-columns: 1fr; }
             .pref-btn { width: 100%; }
+            .leader-settings-grid { grid-template-columns: 1fr; }
             .leader-shell { grid-template-columns: 1fr; }
+            .leader-profile-sections { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -796,6 +830,34 @@
                 <div id="leader-overview-grid" class="leader-overview-grid"></div>
                 <div id="leader-roster" class="leader-roster"></div>
 
+                <div class="leader-pane" style="margin-bottom:14px">
+                    <div class="section-row" style="margin-bottom:0">
+                        <div>
+                            <div class="card-title" style="margin-bottom:6px"><i class="fas fa-sliders"></i> Faction Settings</div>
+                            <div class="section-sub">Descriere, reguli si modelul de aplicatie pentru liderii care vor sa tina recrutarea curata.</div>
+                        </div>
+                        <div id="leader-settings-meta" class="leader-settings-meta">Se incarca setarile factiunii...</div>
+                    </div>
+                    <div class="leader-settings-grid">
+                        <div class="field" style="margin-bottom:0">
+                            <label>Descriere Factiune</label>
+                            <textarea id="leader-faction-description" placeholder="Cum se prezinta factiunea ta pe panel."></textarea>
+                        </div>
+                        <div class="field" style="margin-bottom:0">
+                            <label>Reguli Rapide</label>
+                            <textarea id="leader-faction-rules" placeholder="Reguli scurte pentru membrii si candidati."></textarea>
+                        </div>
+                        <div class="field leader-settings-wide" style="margin-bottom:0">
+                            <label>Model Aplicatie</label>
+                            <textarea id="leader-faction-model" placeholder="Ce vrei sa raspunda candidatii si cum vrei sa sune o aplicatie buna."></textarea>
+                        </div>
+                    </div>
+                    <div class="leader-action-strip">
+                        <button class="search-btn" onclick="saveFactionSettings()"><i class="fas fa-floppy-disk"></i> Salveaza Settings</button>
+                        <button class="tiny-btn" onclick="resetFactionSettingsDraft()"><i class="fas fa-rotate-left"></i> Reseteaza Draft</button>
+                    </div>
+                </div>
+
                 <div class="leader-shell">
                     <div class="leader-pane">
                         <div class="card-title" style="margin-bottom:10px"><i class="fas fa-inbox"></i> Aplicatii Pending</div>
@@ -947,6 +1009,8 @@
     let leaderMembersRaw = [];
     let leaderLogsRaw = [];
     let leaderWarnsRaw = [];
+    let leaderSettingsSnapshot = null;
+    let leaderSettingsDirty = false;
     let selectedLeaderAppId = "";
     let selectedLeaderMember = "";
     let factionHubInterval = null;
@@ -2019,10 +2083,133 @@
             : `<span class="badge badge-gray">Niciun leader sincronizat separat.</span>`;
     }
 
+    function renderLeaderSettings(settings) {
+        bindLeaderSettingsInputs();
+        leaderSettingsSnapshot = settings || {};
+        const descEl = document.getElementById("leader-faction-description");
+        const rulesEl = document.getElementById("leader-faction-rules");
+        const modelEl = document.getElementById("leader-faction-model");
+        const metaEl = document.getElementById("leader-settings-meta");
+        if (!descEl || !rulesEl || !modelEl || !metaEl) return;
+
+        if (!leaderSettingsDirty) {
+            descEl.value = String(settings?.description || "");
+            rulesEl.value = String(settings?.rules || "");
+            modelEl.value = String(settings?.application_model || "");
+        }
+
+        const updatedAt = Number(settings?.updated_at || 0);
+        const updatedBy = String(settings?.updated_by || "").trim();
+        metaEl.innerHTML = updatedAt
+            ? `Ultima modificare: <strong>${safeHtml(fmtDate(updatedAt))}</strong><br>De catre: <strong>${safeHtml(updatedBy || "necunoscut")}</strong>${leaderSettingsDirty ? "<br>Ai un draft nesalvat in editor." : ""}`
+            : `Setari pregatite pentru factiunea ta.${leaderSettingsDirty ? "<br>Ai un draft nesalvat in editor." : ""}`;
+    }
+
     function leaderRankLabel(member) {
         const title = String(member?.rank_title || "").trim();
         const rank = Number(member?.rank || 0);
         return title ? `${rank} - ${title}` : `Rank ${rank}`;
+    }
+
+    function buildMiniTimeline(items, emptyText, mapper) {
+        if (!items.length) {
+            return `<div class="empty-panel" style="padding:18px">${emptyText}</div>`;
+        }
+        return `<div class="leader-mini-timeline">${items.map(mapper).join("")}</div>`;
+    }
+
+    function buildLeaderMemberProfileHtml(member, expanded = false) {
+        if (!member) {
+            return `<div class="empty-panel">Alege un membru din stanga ca sa vezi rank-ul real, warns si istoricul lui recent.</div>`;
+        }
+
+        const warns = getLeaderMemberWarns(member.username);
+        const history = getLeaderMemberHistory(member.username);
+        const lastWarn = warns[0];
+        const heroBadges = [
+            `<span class="badge badge-blue">${safeHtml(leaderRankLabel(member))}</span>`,
+            `<span class="badge badge-orange">Level ${Number(member.level || 1)}</span>`,
+            `<span class="badge ${Number(member.rank || 0) >= 5 ? "badge-green" : "badge-gray"}">${Number(member.rank || 0) >= 5 ? "Leader" : "Membru activ"}</span>`,
+            `<span class="badge badge-gray">Last online: ${safeHtml(member.last_online || "-")}</span>`,
+        ].join("");
+        const historyHtml = buildMiniTimeline(
+            history.slice(0, expanded ? 8 : 4),
+            "Membrul nu are actiuni recente in istoricul factiunii.",
+            (row) => {
+                const meta = leaderLogEventMeta(row.event);
+                return `
+                    <div class="leader-mini-item">
+                        <strong>${safeHtml(meta.label)}</strong>
+                        <p>${safeHtml(formatLeaderLogDetails(row, meta) || "Fara detalii suplimentare.")}</p>
+                        <span>${safeHtml(fmtDate(row.ts || row.created_at))}</span>
+                    </div>
+                `;
+            }
+        );
+        const warnsHtml = buildMiniTimeline(
+            warns.slice(0, expanded ? 8 : 4),
+            "Membrul selectat nu are warns in istoric.",
+            (row) => `
+                <div class="leader-mini-item">
+                    <strong>Warn de la ${safeHtml(row.from || "-")}</strong>
+                    <p>${safeHtml(row.reason || "Fara motiv.")}</p>
+                    <span>${safeHtml(fmtDate(row.ts))}</span>
+                </div>
+            `
+        );
+
+        return `
+            <div class="leader-profile-header">
+                <div>
+                    <div class="leader-detail-title">${safeHtml(member.username)}</div>
+                    <div class="leader-detail-sub">${safeHtml(getFactionRankTitle(member.rank))} | In factiune din ${member.joined_at ? fmtDate(member.joined_at) : "-"}.</div>
+                    <div class="leader-profile-badges">${heroBadges}</div>
+                </div>
+            </div>
+            <div class="leader-detail-grid">
+                <div class="leader-detail-block">
+                    <div class="k">Cash</div>
+                    <div class="v">$${fmt(member.cash || 0)}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Warns Total</div>
+                    <div class="v">${Number(member.warns_total || 0)}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Ultimul Warn</div>
+                    <div class="v">${lastWarn ? `${fmtDate(lastWarn.ts)} de la ${safeHtml(lastWarn.from || "-")}` : "Fara warn-uri in istoric."}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Ultimul Motiv</div>
+                    <div class="v">${safeHtml(lastWarn?.reason || "-")}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Rank Numeric</div>
+                    <div class="v">${Number(member.rank || 0)}</div>
+                </div>
+                <div class="leader-detail-block">
+                    <div class="k">Statut</div>
+                    <div class="v">${Number(member.rank || 0) >= 5 ? "Leader / management" : "Membru operational"}</div>
+                </div>
+            </div>
+            <div class="leader-profile-sections">
+                <div class="leader-profile-section">
+                    <h4>Istoric Membru</h4>
+                    ${historyHtml}
+                </div>
+                <div class="leader-profile-section">
+                    <h4>Warn Timeline</h4>
+                    ${warnsHtml}
+                </div>
+            </div>
+            <div class="leader-action-strip">
+                <button class="tiny-btn" onclick="openLeaderMemberProfile('${encodeURIComponent(member.username)}')">Profil Complet</button>
+                <button class="tiny-btn" onclick="adjustMemberRank('${encodeURIComponent(member.username)}','down')" ${member.is_self ? "disabled" : ""}>Coboara Rank</button>
+                <button class="tiny-btn" onclick="adjustMemberRank('${encodeURIComponent(member.username)}','up')" ${member.is_self ? "disabled" : ""}>Urca Rank</button>
+                <button class="tiny-btn danger" onclick="giveFactionWarn('${encodeURIComponent(member.username)}')" ${member.is_self ? "disabled" : ""}>Warn Rapid</button>
+                <button class="tiny-btn danger" onclick="removeFactionMember('${encodeURIComponent(member.username)}')" ${member.is_self ? "disabled" : ""}>Kick</button>
+            </div>
+        `;
     }
 
     function renderLeaderApplicationDetail(app) {
@@ -2187,7 +2374,7 @@
                     <td>${member.warns_total || 0}</td>
                     <td>${safeHtml(member.last_online || "-")}</td>
                     <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="tiny-btn" onclick="selectLeaderMember('${encodedUser}')" >Inspect</button>
+                        <button class="tiny-btn" onclick="openLeaderMemberProfile('${encodedUser}')">Profile</button>
                         <button class="tiny-btn" onclick="adjustMemberRank('${encodedUser}','down')" ${selfLock ? 'disabled' : ''}>- Rank</button>
                         <button class="tiny-btn" onclick="adjustMemberRank('${encodedUser}','up')" ${selfLock ? 'disabled' : ''}>+ Rank</button>
                         <button class="tiny-btn danger" onclick="giveFactionWarn('${encodedUser}')" ${selfLock ? 'disabled' : ''}>Warn</button>
@@ -2231,54 +2418,30 @@
         const root = document.getElementById("leader-member-detail");
         if (!root) return;
         if (!member) {
-            root.innerHTML = `<div class="empty-panel">Alege un membru din stanga ca sa vezi rank-ul real, warns si istoricul lui recent.</div>`;
+            root.innerHTML = buildLeaderMemberProfileHtml(null);
             renderLeaderWarnHistory(leaderWarnsRaw, "");
             return;
         }
-
-        const warns = leaderWarnsRaw.filter((row) => String(row.target || "") === String(member.username));
-        const lastWarn = warns[0];
-        root.innerHTML = `
-            <div class="leader-detail-title">${safeHtml(member.username)}</div>
-            <div class="leader-detail-sub">${safeHtml(leaderRankLabel(member))} | Level ${Number(member.level || 1)} | Last online: ${safeHtml(member.last_online || "-")}</div>
-            <div class="leader-detail-grid">
-                <div class="leader-detail-block">
-                    <div class="k">Cash</div>
-                    <div class="v">$${fmt(member.cash || 0)}</div>
-                </div>
-                <div class="leader-detail-block">
-                    <div class="k">Warns Total</div>
-                    <div class="v">${Number(member.warns_total || 0)}</div>
-                </div>
-                <div class="leader-detail-block">
-                    <div class="k">In Factiune Din</div>
-                    <div class="v">${member.joined_at ? fmtDate(member.joined_at) : "-"}</div>
-                </div>
-                <div class="leader-detail-block">
-                    <div class="k">Ultimul Warn</div>
-                    <div class="v">${lastWarn ? `${fmtDate(lastWarn.ts)} de la ${safeHtml(lastWarn.from || "-")}` : "Fara warn-uri in istoric."}</div>
-                </div>
-                <div class="leader-detail-block">
-                    <div class="k">Ultimul Motiv</div>
-                    <div class="v">${safeHtml(lastWarn?.reason || "-")}</div>
-                </div>
-                <div class="leader-detail-block">
-                    <div class="k">Status Lider</div>
-                    <div class="v">${Number(member.rank || 0) >= 5 ? "Leader" : "Membru activ"}</div>
-                </div>
-            </div>
-            <div class="leader-action-strip">
-                <button class="tiny-btn" onclick="adjustMemberRank('${encodeURIComponent(member.username)}','down')" ${member.is_self ? 'disabled' : ''}>Coboara Rank</button>
-                <button class="tiny-btn" onclick="adjustMemberRank('${encodeURIComponent(member.username)}','up')" ${member.is_self ? 'disabled' : ''}>Urca Rank</button>
-                <button class="tiny-btn danger" onclick="giveFactionWarn('${encodeURIComponent(member.username)}')" ${member.is_self ? 'disabled' : ''}>Warn Rapid</button>
-            </div>
-        `;
+        root.innerHTML = buildLeaderMemberProfileHtml(member);
         renderLeaderWarnHistory(leaderWarnsRaw, member.username);
     }
 
     window.selectLeaderMember = function(encodedUser) {
         selectedLeaderMember = decodeURIComponent(encodedUser);
         renderLeaderMembers(leaderMembersRaw);
+    };
+
+    window.openLeaderMemberProfile = function(encodedUser) {
+        const username = decodeURIComponent(encodedUser);
+        const member = getLeaderMemberByName(username);
+        if (!member) return;
+        Swal.fire({
+            title: "",
+            html: buildLeaderMemberProfileHtml(member, true),
+            width: 980,
+            showConfirmButton: false,
+            showCloseButton: true,
+        });
     };
 
     function leaderLogEventMeta(eventName) {
@@ -2295,6 +2458,7 @@
             member_warned: { label: "Warn acordat", note: "Un membru a primit warn." },
             member_rank_changed: { label: "Rank modificat", note: "Rank-ul unui membru a fost schimbat." },
             member_removed: { label: "Membru eliminat", note: "Membrul a fost scos din factiune." },
+            settings_updated: { label: "Settings actualizate", note: "Descrierea, regulile sau modelul de aplicatie au fost modificate." },
         };
         return map[String(eventName || "")] || { label: String(eventName || "Actiune"), note: "-" };
     }
@@ -2309,11 +2473,7 @@
 
         body.innerHTML = leaderLogsRaw.map((row) => {
             const meta = leaderLogEventMeta(row.event);
-            const rankBits = [];
-            if (row.old_rank) rankBits.push(`Rank vechi: ${row.old_rank}`);
-            if (row.new_rank) rankBits.push(`Rank nou: ${row.new_rank}`);
-            if (row.warns_total) rankBits.push(`Total warns: ${row.warns_total}`);
-            const details = [row.note, rankBits.join(" | "), meta.note].filter(Boolean).join(" | ");
+            const details = formatLeaderLogDetails(row, meta);
             return `
                 <tr>
                     <td>${fmtDate(row.ts || row.created_at)}</td>
@@ -2394,13 +2554,95 @@
             leaderAppsBadge.textContent = appsOpen ? "OPEN" : "CLOSED";
             toggleAppsBtn.textContent = appsOpen ? "Inchide Aplicatii" : "Deschide Aplicatii";
             renderLeaderOverview(data);
+            renderLeaderSettings(data.leader_settings || {});
             renderLeaderApplications(data.leader_pending_apps || []);
             renderLeaderWarnHistory(data.leader_warn_history || []);
             renderLeaderMembers(data.leader_members || []);
             renderLeaderLogs(data.leader_logs || []);
         } else {
             leaderTools.style.display = "none";
+            leaderSettingsDirty = false;
         }
+    }
+
+    function getMyFactionConfig() {
+        const rows = Array.isArray(hubSnapshot?.game_factions) ? hubSnapshot.game_factions : [];
+        return rows.find((row) => String(row.name || "") === String(hubSnapshot?.my_faction || "")) || null;
+    }
+
+    function getFactionRankTitle(rank) {
+        const cfg = getMyFactionConfig();
+        const ranks = cfg && typeof cfg.ranks === "object" ? cfg.ranks : {};
+        const row = ranks?.[Number(rank || 0)];
+        return String(row?.title || `Rank ${Number(rank || 0)}`);
+    }
+
+    function getLeaderMemberByName(username) {
+        return leaderMembersRaw.find((member) => String(member.username) === String(username)) || null;
+    }
+
+    function getLeaderMemberHistory(username) {
+        return leaderLogsRaw.filter((row) => String(row.actor || "") === String(username) || String(row.target || "") === String(username)).slice(0, 8);
+    }
+
+    function getLeaderMemberWarns(username) {
+        return leaderWarnsRaw.filter((row) => String(row.target || "") === String(username)).slice(0, 8);
+    }
+
+    function formatLeaderLogDetails(row, meta) {
+        const rankBits = [];
+        if (row.old_rank) rankBits.push(`Rank vechi: ${row.old_rank}`);
+        if (row.new_rank) rankBits.push(`Rank nou: ${row.new_rank}`);
+        if (row.warns_total) rankBits.push(`Total warns: ${row.warns_total}`);
+        return [row.note, rankBits.join(" | "), meta.note].filter(Boolean).join(" | ");
+    }
+
+    async function promptLeaderTextarea({ title, label, placeholder = "", value = "", confirmText = "Confirma", minLength = 3, maxLength = 300 }) {
+        const result = await Swal.fire({
+            title,
+            input: "textarea",
+            inputLabel: label,
+            inputPlaceholder: placeholder,
+            inputValue: value,
+            inputAttributes: { maxlength: String(maxLength), autocapitalize: "sentences" },
+            showCancelButton: true,
+            confirmButtonText: confirmText,
+            cancelButtonText: "Renunta",
+            reverseButtons: true,
+            inputValidator: (raw) => {
+                const clean = String(raw || "").trim();
+                if (clean.length < minLength) {
+                    return `Textul trebuie sa aiba minim ${minLength} caractere.`;
+                }
+                return undefined;
+            },
+        });
+        if (!result.isConfirmed) return null;
+        return String(result.value || "").trim();
+    }
+
+    async function confirmLeaderAction({ title, text, confirmText = "Confirma", icon = "warning" }) {
+        const result = await Swal.fire({
+            title,
+            text,
+            icon,
+            showCancelButton: true,
+            confirmButtonText: confirmText,
+            cancelButtonText: "Renunta",
+            reverseButtons: true,
+        });
+        return !!result.isConfirmed;
+    }
+
+    function bindLeaderSettingsInputs() {
+        ["leader-faction-description", "leader-faction-rules", "leader-faction-model"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el || el.dataset.bound === "1") return;
+            el.addEventListener("input", () => {
+                leaderSettingsDirty = true;
+            });
+            el.dataset.bound = "1";
+        });
     }
 
     async function refreshPPShop() {
@@ -2521,13 +2763,27 @@
 
     window.reviewFactionApplication = async function(encodedAppId, decision) {
         const appId = decodeURIComponent(encodedAppId);
+        const app = leaderAppMap[appId];
         let reason = "";
         if (decision === "reject") {
-            reason = prompt("Motiv respingere:", "Aplicatia nu indeplineste criteriile minime.");
-            if (!reason || reason.trim().length < 3) {
-                setStatusLine("leader-status", false, "Trebuie un motiv de minim 3 caractere pentru reject.");
+            reason = await promptLeaderTextarea({
+                title: "Respinge aplicatia",
+                label: `Motiv pentru respingerea lui ${app?.applicant || "candidat"}`,
+                placeholder: "Explica pe scurt de ce aplicatia nu trece mai departe.",
+                value: "Aplicatia nu indeplineste criteriile minime.",
+                confirmText: "Respinge",
+            });
+            if (!reason) {
                 return;
             }
+        } else {
+            const confirmed = await confirmLeaderAction({
+                title: "Trimite invite candidatului?",
+                text: `Daca accepti, ${app?.applicant || "jucatorul"} va primi invite si va trebui sa confirme intrarea din panel.`,
+                confirmText: "Trimite Invite",
+                icon: "question",
+            });
+            if (!confirmed) return;
         }
 
         const data = await panelApi("review_application", { appId, decision, reason });
@@ -2560,6 +2816,13 @@
             setStatusLine("leader-status", false, "Introdu username-ul jucatorului.");
             return;
         }
+        const confirmed = await confirmLeaderAction({
+            title: "Promovezi un leader nou?",
+            text: `${target} va primi rank 5 si control complet pe zona de lider a factiunii.`,
+            confirmText: "Promoveaza",
+            icon: "question",
+        });
+        if (!confirmed) return;
         const data = await panelApi("add_leader", { target });
         if (!data.ok) {
             setStatusLine("leader-status", false, data.msg || "Nu am putut promova leader.");
@@ -2574,6 +2837,13 @@
 
     window.promoteLeaderFromList = async function(encodedUser) {
         const target = decodeURIComponent(encodedUser);
+        const confirmed = await confirmLeaderAction({
+            title: "Setezi leader din lista?",
+            text: `${target} va deveni leader si va primi rank 5 in ${hubSnapshot?.my_faction || "factiune"}.`,
+            confirmText: "Set Leader",
+            icon: "question",
+        });
+        if (!confirmed) return;
         const data = await panelApi("add_leader", { target });
         if (!data.ok) {
             setStatusLine("leader-status", false, data.msg || "Nu am putut promova liderul.");
@@ -2587,7 +2857,13 @@
 
     window.giveFactionWarn = async function(encodedUser) {
         const target = decodeURIComponent(encodedUser);
-        const reason = prompt(`Motiv warn pentru ${target}:`, "Incalcare regulament factiune");
+        const reason = await promptLeaderTextarea({
+            title: "Acorda warn",
+            label: `Motiv pentru warn-ul lui ${target}`,
+            placeholder: "Scrie abaterea exacta ca sa ramana clar in istoric.",
+            value: "Incalcare regulament factiune",
+            confirmText: "Aplica Warn",
+        });
         if (!reason) return;
 
         const data = await panelApi("warn_member", { target, reason });
@@ -2602,6 +2878,18 @@
 
     window.adjustMemberRank = async function(encodedUser, direction) {
         const target = decodeURIComponent(encodedUser);
+        const member = getLeaderMemberByName(target);
+        const currentRank = Number(member?.rank || 0);
+        const nextRank = Math.max(1, Math.min(4, currentRank + (direction === "up" ? 1 : -1)));
+        const confirmed = await confirmLeaderAction({
+            title: direction === "up" ? "Urca rank-ul?" : "Coboara rank-ul?",
+            text: member
+                ? `${target} va trece din ${getFactionRankTitle(currentRank)} in ${getFactionRankTitle(nextRank)}.`
+                : `Se modifica rank-ul lui ${target}.`,
+            confirmText: direction === "up" ? "Urca Rank" : "Coboara Rank",
+            icon: "question",
+        });
+        if (!confirmed) return;
         const data = await panelApi("set_member_rank", { target, direction });
         if (!data.ok) {
             setStatusLine("leader-status", false, data.msg || "Nu am putut modifica rank-ul.");
@@ -2614,8 +2902,14 @@
 
     window.removeFactionMember = async function(encodedUser) {
         const target = decodeURIComponent(encodedUser);
-        const reason = prompt(`Motiv pentru scoaterea lui ${target}:`, "Inactivitate sau abatere de la regulament.");
-        if (reason === null) return;
+        const reason = await promptLeaderTextarea({
+            title: "Scoate membrul din factiune",
+            label: `Motiv pentru eliminarea lui ${target}`,
+            placeholder: "Motivul ramane in log-urile factiunii.",
+            value: "Inactivitate sau abatere de la regulament.",
+            confirmText: "Scoate Membrul",
+        });
+        if (!reason) return;
 
         const data = await panelApi("remove_member", { target, reason });
         if (!data.ok) {
@@ -2628,6 +2922,16 @@
     };
 
     window.toggleFactionApps = async function() {
+        const currentlyOpen = !!hubSnapshot?.my_faction_apps_open;
+        const confirmed = await confirmLeaderAction({
+            title: currentlyOpen ? "Inchizi aplicatiile?" : "Deschizi aplicatiile?",
+            text: currentlyOpen
+                ? "Noi candidati nu vor mai putea trimite aplicatii pana la redeschidere."
+                : "Candidatii eligibili vor vedea factiunea ca OPEN in panel.",
+            confirmText: currentlyOpen ? "Inchide" : "Deschide",
+            icon: "question",
+        });
+        if (!confirmed) return;
         const data = await panelApi("toggle_apps");
         if (!data.ok) {
             setStatusLine("leader-status", false, data.msg || "Nu am putut modifica statusul aplicatiilor.");
@@ -2635,6 +2939,37 @@
         }
         setStatusLine("leader-status", true, data.msg || "Status aplicatii actualizat.");
         await refreshFactionHub();
+    };
+
+    window.saveFactionSettings = async function() {
+        const description = String(document.getElementById("leader-faction-description")?.value || "").trim();
+        const rules = String(document.getElementById("leader-faction-rules")?.value || "").trim();
+        const applicationModel = String(document.getElementById("leader-faction-model")?.value || "").trim();
+        if (description.length < 20 || rules.length < 20 || applicationModel.length < 20) {
+            setStatusLine("leader-status", false, "Descrierea, regulile si modelul aplicatiei trebuie sa aiba minim 20 de caractere fiecare.");
+            return;
+        }
+
+        const data = await panelApi("update_faction_settings", {
+            description,
+            rules,
+            applicationModel,
+        });
+        if (!data.ok) {
+            setStatusLine("leader-status", false, data.msg || "Nu am putut salva settings-urile.");
+            return;
+        }
+
+        leaderSettingsDirty = false;
+        setStatusLine("leader-status", true, data.msg || "Settings salvate.");
+        Toast.fire({ icon: "success", title: "Faction Settings actualizate." });
+        await refreshFactionHub();
+    };
+
+    window.resetFactionSettingsDraft = function() {
+        leaderSettingsDirty = false;
+        renderLeaderSettings(leaderSettingsSnapshot || {});
+        setStatusLine("leader-status", true, "Draft-ul local a fost resetat la ultima versiune salvata.");
     };
 
     window.buyShopItem = async function(itemId) {

@@ -48,6 +48,55 @@ DEFAULT_GAME_FACTIONS = [
 _FACTION_CONFIG_CACHE = {"ts": 0, "data": []}
 
 
+def _normalize_multiline(value: str, max_len: int) -> str:
+    text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()[:max_len]
+
+
+def _default_faction_settings(faction_name: str, faction_cfg: dict | None = None):
+    level_req = parse_int(_as_dict(faction_cfg).get("level_req", 1), 1)
+    return {
+        "description": (
+            f"{faction_name} este una dintre structurile importante ale serverului. "
+            f"Cautam jucatori seriosi, activi si disciplinati, pregatiti sa mentina un standard bun in panel si in joc. "
+            f"Nivel minim recomandat: {level_req}."
+        ),
+        "rules": (
+            "1. Respect fata de lideri, colegi si candidati.\n"
+            "2. Activitate constanta si prezenta buna la apeluri / sedinte.\n"
+            "3. Fara troll, abuz sau raspunsuri superficiale in aplicatii.\n"
+            "4. Orice warn sau sanctiune trebuie justificata clar in panel.\n"
+            "5. Imaginea factiunii se tine curata atat in joc, cat si pe panel."
+        ),
+        "application_model": (
+            "Prezinta-te clar, spune cata experienta ai pe servere RP, cate ore joci, "
+            "de ce vrei aceasta factiune si cu ce crezi ca poti contribui. "
+            "Aplicatiile scurte, vagi sau copiate sunt respinse."
+        ),
+    }
+
+
+def _load_faction_settings(faction_name: str, auth_token: str | None = None, faction_cfg: dict | None = None):
+    defaults = _default_faction_settings(faction_name, faction_cfg)
+    if not faction_name or faction_name == "Civil":
+        return {**defaults, "updated_at": 0, "updated_by": ""}
+
+    ok, raw, _ = firebase_get(
+        f"panel/faction_settings/{_safe_path(faction_name)}",
+        auth_token=auth_token,
+    )
+    stored = _as_dict(raw) if ok else {}
+    return {
+        "description": _normalize_multiline(stored.get("description", defaults["description"]), 900) or defaults["description"],
+        "rules": _normalize_multiline(stored.get("rules", defaults["rules"]), 2400) or defaults["rules"],
+        "application_model": _normalize_multiline(stored.get("application_model", defaults["application_model"]), 2400) or defaults["application_model"],
+        "updated_at": parse_int(stored.get("updated_at", 0), 0),
+        "updated_by": str(stored.get("updated_by", "")).strip(),
+    }
+
+
 def _normalize_status(value: str) -> str:
     raw = str(value or "").strip().lower()
     if raw in ("pending", "in_review"):
@@ -438,9 +487,11 @@ def _handle_list_hub(identity: dict, users: dict):
     leader_warn_history = []
     leader_names = []
     leader_overview = {}
+    leader_settings = {}
     if is_leader:
         faction_cfg = next((row for row in game_factions if row["name"] == my_faction), {})
         rank_cfg = faction_cfg.get("ranks") if isinstance(faction_cfg.get("ranks"), dict) else {}
+        leader_settings = _load_faction_settings(my_faction, auth_token=auth_token, faction_cfg=faction_cfg)
         users_by_name = {str(name): _as_dict(data) for name, data in users.items()}
         leader_pending = [
             dict(app)
@@ -542,6 +593,7 @@ def _handle_list_hub(identity: dict, users: dict):
         "leader_warn_history": leader_warn_history,
         "leader_names": leader_names,
         "leader_overview": leader_overview,
+        "leader_settings": leader_settings,
         "shop_history": history[:40],
     }
 
@@ -1057,6 +1109,55 @@ def _handle_remove_member(identity: dict, users: dict, body: dict):
     return {"ok": True, "msg": f"{target} a fost scos din {my_faction}."}
 
 
+def _handle_update_faction_settings(identity: dict, users: dict, body: dict):
+    username = identity["username"]
+    auth_token = identity.get("id_token", "")
+    me = _as_dict(users.get(username))
+    my_faction = str(me.get("factiune", "Civil")) or "Civil"
+    if not _is_leader(users, username, my_faction, auth_token=auth_token):
+        return {"ok": False, "msg": "Nu ai drepturi de leader."}
+
+    faction_cfg = next((row for row in _parse_game_factions() if row["name"] == my_faction), {})
+    description = _normalize_multiline(body.get("description", ""), 900)
+    rules = _normalize_multiline(body.get("rules", ""), 2400)
+    application_model = _normalize_multiline(body.get("applicationModel", ""), 2400)
+    if len(description) < 20 or len(rules) < 20 or len(application_model) < 20:
+        return {
+            "ok": False,
+            "msg": "Descrierea, regulile si modelul aplicatiei trebuie sa aiba minim 20 de caractere fiecare.",
+        }
+
+    payload = {
+        "description": description,
+        "rules": rules,
+        "application_model": application_model,
+        "updated_at": _now_ms(),
+        "updated_by": username,
+    }
+    ok_save, _, err_save = firebase_write(
+        f"panel/faction_settings/{_safe_path(my_faction)}",
+        payload,
+        "PUT",
+        auth_token=auth_token,
+    )
+    if not ok_save:
+        return {"ok": False, "msg": err_save}
+
+    _log_faction_event(
+        my_faction,
+        username,
+        my_faction,
+        "settings_updated",
+        auth_token=auth_token,
+        note=f"Descriere {len(description)}c | Reguli {len(rules)}c | Model {len(application_model)}c",
+    )
+    return {
+        "ok": True,
+        "msg": f"Faction Settings pentru {my_faction} au fost salvate.",
+        "leader_settings": _load_faction_settings(my_faction, auth_token=auth_token, faction_cfg=faction_cfg),
+    }
+
+
 def _handle_buy_shop_item(identity: dict, users: dict, body: dict):
     username = identity["username"]
     auth_token = identity.get("id_token", "")
@@ -1304,6 +1405,11 @@ class handler(BaseHTTPRequestHandler):
 
         if action == "remove_member":
             payload = _handle_remove_member(identity, users, body)
+            send_json(self, 200 if payload.get("ok") else 400, payload)
+            return
+
+        if action == "update_faction_settings":
+            payload = _handle_update_faction_settings(identity, users, body)
             send_json(self, 200 if payload.get("ok") else 400, payload)
             return
 
