@@ -835,6 +835,51 @@ def _handle_buy_shop_item(identity: dict, users: dict, body: dict):
     }
 
 
+def _handle_set_spawn_preference(identity: dict, users: dict, body: dict):
+    username = identity["username"]
+    auth_token = identity.get("id_token", "")
+    profile = _as_dict(users.get(username))
+    if not profile:
+        return {"ok": False, "msg": "Profil user lipsa."}
+
+    raw_preference = str(body.get("preference", "")).strip().lower()
+    if raw_preference in ("house", "casa"):
+        preference = "House"
+    elif raw_preference in ("spawn",):
+        preference = "Spawn"
+    else:
+        return {"ok": False, "msg": "Preferinta invalida. Alege Spawn sau House."}
+
+    owned_house = parse_int(profile.get("casa_detinuta", 0), 0)
+    rented_house = parse_int(profile.get("casa_inchiriata", 0), 0)
+    if preference == "House" and owned_house <= 0 and rented_house <= 0:
+        return {"ok": False, "msg": "Nu ai casa detinuta sau chirie activa pentru spawn House."}
+
+    ok_sync, sync_note = _send_roblox_command(username, "SetSpawnPref", username, preference, "Panel Properties")
+    if not ok_sync:
+        return {"ok": False, "msg": sync_note}
+
+    patch = {
+        "spawn_preferat": preference,
+        "spawn_actual": preference,
+        "spawn_updated_at": _now_ms(),
+    }
+    ok_user, _, err_user = _firebase_patch(
+        f"users/{_safe_path(username)}",
+        patch,
+        auth_token=auth_token,
+    )
+    if not ok_user:
+        return {"ok": False, "msg": err_user}
+
+    return {
+        "ok": True,
+        "msg": f"Spawn preference a fost schimbat pe {preference}.",
+        "preference": preference,
+        "sync_note": sync_note,
+    }
+
+
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         send_json(self, 200, {"ok": True})
@@ -896,6 +941,11 @@ class handler(BaseHTTPRequestHandler):
 
         if action == "toggle_apps":
             payload = _handle_toggle_apps(identity, users)
+            send_json(self, 200 if payload.get("ok") else 400, payload)
+            return
+
+        if action == "set_spawn_preference":
+            payload = _handle_set_spawn_preference(identity, users, body)
             send_json(self, 200 if payload.get("ok") else 400, payload)
             return
 

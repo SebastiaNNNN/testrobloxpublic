@@ -213,7 +213,7 @@
         .kv-item .v { font-size: 16px; font-weight: 700; color: #e2e8f0; margin-top: 4px; }
         .section-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
         .section-sub { color:#64748b; font-size:12px; }
-        .overview-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; }
+        .overview-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:20px; }
         .overview-card {
             background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
             border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px;
@@ -221,7 +221,7 @@
         .overview-label { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:700; }
         .overview-value { margin-top:8px; font-size:24px; font-weight:900; color:#fff; }
         .overview-note { margin-top:6px; font-size:12px; color:#94a3b8; }
-        .garage-summary { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:14px; }
+        .garage-summary { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:14px; margin-bottom:20px; }
         .garage-mini-stat { background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px; }
         .garage-mini-stat .top { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:700; }
         .garage-mini-stat .val { margin-top:8px; font-size:22px; font-weight:900; color:#fff; }
@@ -240,20 +240,50 @@
         .garage-spec .v { color:#e2e8f0; font-size:14px; font-weight:800; margin-top:4px; }
         .progress-shell { height:10px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden; }
         .progress-bar { height:100%; border-radius:999px; background:linear-gradient(90deg, #00ff88, #38bdf8); }
-        .property-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
+        .property-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:18px; margin-top:6px; align-items:stretch; }
         .property-card {
             background: linear-gradient(180deg, rgba(56,189,248,0.09), rgba(255,255,255,0.02));
-            border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px;
+            border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:22px;
+            box-shadow: 0 18px 38px rgba(2, 6, 23, 0.28);
         }
         .property-card h3 { font-size:18px; font-weight:900; color:#fff; }
         .property-card p { margin-top:8px; color:#94a3b8; font-size:13px; line-height:1.5; }
-        .notification-stack { display:flex; flex-direction:column; gap:12px; }
+        .property-detail-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin-top:16px; }
+        .property-detail {
+            background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px;
+        }
+        .property-detail .k { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; }
+        .property-detail .v { color:#fff; font-size:15px; font-weight:800; margin-top:5px; }
+        .property-toggle { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+        .pref-btn {
+            flex:1; min-width:140px; padding:12px 14px; border-radius:14px; border:1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04); color:#cbd5e1; font-size:13px; font-weight:800; cursor:pointer;
+            transition: border-color 0.15s, transform 0.15s, background 0.15s, color 0.15s;
+        }
+        .pref-btn:hover { border-color: rgba(0,255,136,0.35); color:#fff; transform: translateY(-1px); }
+        .pref-btn.active {
+            border-color: rgba(0,255,136,0.4);
+            background: linear-gradient(135deg, rgba(0,255,136,0.2), rgba(56,189,248,0.18));
+            color:#ecfeff;
+        }
+        .pref-btn:disabled {
+            cursor:not-allowed; opacity:0.5; transform:none;
+        }
+        .property-note-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+        .notification-stack { display:flex; flex-direction:column; gap:16px; margin-top:18px; }
+        .notice-spotlight {
+            background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(56,189,248,0.08));
+            border:1px solid rgba(0,255,136,0.12); border-radius:16px; padding:18px 20px;
+        }
+        .notice-spotlight .eyebrow { color:#00ff88; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:800; }
+        .notice-spotlight .headline { margin-top:8px; font-size:20px; font-weight:900; color:#fff; }
+        .notice-spotlight .sub { margin-top:8px; color:#cbd5e1; font-size:13px; line-height:1.6; }
         .notice-card {
             display:flex; gap:14px; align-items:flex-start; background:rgba(255,255,255,0.03);
-            border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:14px;
+            border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:18px;
         }
         .notice-icon {
-            width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+            width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center;
             background:rgba(0,255,136,0.12); color:#00ff88; font-size:15px; flex-shrink:0;
         }
         .notice-copy { flex:1; min-width:0; }
@@ -291,6 +321,7 @@
         .tiny-btn:hover { border-color: rgba(0,255,136,0.4); color:#00ff88; }
         .tiny-btn.danger { border-color: rgba(248,113,113,0.25); color:#fca5a5; }
         .tiny-btn.danger:hover { border-color: rgba(248,113,113,0.45); color:#fecaca; }
+        .tiny-btn:disabled { opacity:0.45; cursor:not-allowed; }
 
         .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
         .shop-card {
@@ -319,6 +350,8 @@
             .stat-grid { grid-template-columns: 1fr 1fr; }
             .split-2 { grid-template-columns: 1fr; }
             .garage-specs { grid-template-columns: 1fr; }
+            .property-detail-grid { grid-template-columns: 1fr; }
+            .pref-btn { width: 100%; }
         }
     </style>
 </head>
@@ -926,6 +959,14 @@
         return String(color || '').trim() || 'Necunoscuta';
     }
 
+    function normalizeSpawnPreference(value) {
+        return String(value || '').trim().toLowerCase() === 'house' ? 'House' : 'Spawn';
+    }
+
+    function hasHouseAccess(profile) {
+        return Number(profile?.casa_detinuta || 0) > 0 || Number(profile?.casa_inchiriata || 0) > 0;
+    }
+
     function buildGarageCards(cars, limit = 0) {
         const visibleCars = limit > 0 ? cars.slice(0, limit) : cars;
         if (!visibleCars.length) {
@@ -983,7 +1024,7 @@
         const availableSlots = Math.max(slots - cars.length, 0);
         const ownedHouse = Number(profile?.casa_detinuta || 0);
         const rentedHouse = Number(profile?.casa_inchiriata || 0);
-        const spawnPref = String(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
+        const spawnPref = normalizeSpawnPreference(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
         const ownedLocked = !!profile?.casa_detinuta_inchisa;
         const ownedRentable = !!profile?.casa_detinuta_chirie_activata;
         const ownedRentPrice = Number(profile?.casa_detinuta_pret_chirie || 0);
@@ -1050,6 +1091,14 @@
         const spawned = cars.filter((car) => String(car?.status || '').toLowerCase() === 'spawned').length;
         const stored = cars.filter((car) => String(car?.status || '').toLowerCase() === 'stored').length;
         const broken = cars.filter((car) => String(car?.status || '').toLowerCase() === 'broken').length;
+        const totalKm = cars.reduce((sum, car) => sum + Number(car?.km || 0), 0);
+        const avgKm = cars.length ? Math.round(totalKm / cars.length) : 0;
+        const modelMap = {};
+        cars.forEach((car) => {
+            const key = String(car?.model || 'Necunoscut');
+            modelMap[key] = (modelMap[key] || 0) + 1;
+        });
+        const topModel = Object.entries(modelMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
         const usagePct = slots > 0 ? Math.min(100, Math.round((cars.length / slots) * 100)) : 0;
 
         summary.innerHTML = `
@@ -1057,6 +1106,8 @@
             <div class="garage-mini-stat"><div class="top">Stored</div><div class="val">${stored}</div></div>
             <div class="garage-mini-stat"><div class="top">Spawned</div><div class="val">${spawned}</div></div>
             <div class="garage-mini-stat"><div class="top">Broken</div><div class="val">${broken}</div></div>
+            <div class="garage-mini-stat"><div class="top">Kilometri Totali</div><div class="val">${fmt(totalKm)}</div></div>
+            <div class="garage-mini-stat"><div class="top">Model Dominant</div><div class="val" style="font-size:16px">${safeHtml(topModel)}</div><div class="top" style="margin-top:8px;">Media ${fmt(avgKm)} km</div></div>
         `;
         usageBar.style.width = `${usagePct}%`;
         usageText.textContent = `${cars.length} / ${slots || 0} sloturi ocupate`;
@@ -1070,7 +1121,7 @@
 
         const ownedHouse = Number(profile?.casa_detinuta || 0);
         const rentedHouse = Number(profile?.casa_inchiriata || 0);
-        const spawnPref = String(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
+        const spawnPref = normalizeSpawnPreference(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
         const slots = Number(profile?.sloturi_garaj || 0);
         const ownedLocked = !!profile?.casa_detinuta_inchisa;
         const ownedRentable = !!profile?.casa_detinuta_chirie_activata;
@@ -1080,6 +1131,12 @@
         const rentedPrice = Number(profile?.casa_inchiriata_pret_chirie || 0);
         const rentedOwner = String(profile?.casa_inchiriata_owner || '').trim();
         const hasExtendedSync = ownedHouse > 0 || rentedHouse > 0 || spawnPref !== 'Spawn';
+        const houseAccess = hasHouseAccess(profile);
+        const houseSpawnLabel = ownedHouse > 0
+            ? `Casa #${ownedHouse}`
+            : rentedHouse > 0
+                ? `Chirie #${rentedHouse}`
+                : 'Fara casa';
 
         summary.innerHTML = `
             <div class="overview-card">
@@ -1095,7 +1152,7 @@
             <div class="overview-card">
                 <div class="overview-label">Spawn Preference</div>
                 <div class="overview-value">${safeHtml(spawnPref)}</div>
-                <div class="overview-note">Pe ce punct important vrei sa intri in joc.</div>
+                <div class="overview-note">${houseAccess ? 'O poti schimba direct din panel si se trimite in joc.' : 'Cand ai casa sau chirie activa, se deblocheaza si spawn-ul House.'}</div>
             </div>
             <div class="overview-card">
                 <div class="overview-label">Seif Casa</div>
@@ -1128,12 +1185,52 @@
                     <span class="badge ${ownedRentable ? 'badge-green' : 'badge-gray'}">${ownedRentable ? 'Rent ON' : 'Rent OFF'}</span>
                     <span class="badge badge-gray">${hasExtendedSync ? 'Live sync enabled' : 'Waiting for next sync'}</span>
                 </div>
+                <div class="property-detail-grid">
+                    <div class="property-detail">
+                        <div class="k">Pret activ</div>
+                        <div class="v">$${fmt(rentedHouse > 0 ? rentedPrice : ownedRentPrice)}</div>
+                    </div>
+                    <div class="property-detail">
+                        <div class="k">Owner / Hub</div>
+                        <div class="v">${safeHtml(rentedHouse > 0 ? (rentedOwner || 'Necunoscut') : 'Casa ta')}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="property-card">
+                <h3>Spawn Preference Control</h3>
+                <p>${houseAccess
+                    ? `Esti setat pe ${safeHtml(spawnPref)}. Daca vrei sa intri direct la ${safeHtml(houseSpawnLabel)}, schimbi de aici si panelul trimite update-ul live.`
+                    : 'Momentan ai doar spawn-ul public disponibil. Cum ai o casa sau chirie activa, se aprinde si butonul House.'}</p>
+                <div class="property-toggle">
+                    <button class="pref-btn ${spawnPref === 'Spawn' ? 'active' : ''}" onclick="setSpawnPreference('Spawn')">Spawn Public</button>
+                    <button class="pref-btn ${spawnPref === 'House' ? 'active' : ''}" onclick="setSpawnPreference('House')" ${houseAccess ? '' : 'disabled'}>${safeHtml(houseSpawnLabel)}</button>
+                </div>
+                <div class="property-note-row">
+                    <span class="badge badge-blue">Actual: ${safeHtml(spawnPref)}</span>
+                    <span class="badge ${houseAccess ? 'badge-green' : 'badge-gray'}">${houseAccess ? 'House available' : 'House unavailable'}</span>
+                </div>
+                <div id="property-spawn-status" class="status-line"></div>
             </div>
             <div class="property-card">
                 <h3>Property Ecosystem</h3>
-                <p>Sloturi garaj: ${slots}. Aici poti vedea tot lantul casei: spawn, chirie, seif si relatia cu masina sau cu chiriasii.</p>
-                <div class="garage-card-meta">
-                    <span class="badge badge-blue">Garage slots: ${slots}</span>
+                <p>Sloturi garaj: ${slots}. Aici vezi lantul complet al locuintei: seif, chirie, spawn, chiriasi si cat de bine e conectata proprietatea la restul panelului.</p>
+                <div class="property-detail-grid">
+                    <div class="property-detail">
+                        <div class="k">Garage Slots</div>
+                        <div class="v">${slots}</div>
+                    </div>
+                    <div class="property-detail">
+                        <div class="k">Sync status</div>
+                        <div class="v">${hasExtendedSync ? 'LIVE' : 'BASIC'}</div>
+                    </div>
+                    <div class="property-detail">
+                        <div class="k">Locuinta activa</div>
+                        <div class="v">${safeHtml(houseSpawnLabel)}</div>
+                    </div>
+                    <div class="property-detail">
+                        <div class="k">Chiriasi</div>
+                        <div class="v">${ownedTenants}</div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1180,6 +1277,7 @@
                 label: (status || 'update').toUpperCase(),
                 title,
                 body,
+                category: status === 'invited' ? 'Invite' : status === 'joined' ? 'Faction' : status === 'rejected' ? 'Review' : 'Progress',
             });
         });
 
@@ -1191,6 +1289,7 @@
                 label: `${Number(item?.cost_pp || 0)} PP`,
                 title: `Cumparatura: ${item?.item_name || item?.item_id || 'Item'}`,
                 body: `Status: ${item?.status || 'done'}. Itemul a fost inregistrat in istoricul panelului.`,
+                category: 'Shop',
             });
         });
 
@@ -1202,6 +1301,7 @@
                 label: 'LEADER',
                 title: `Ai ${leaderPending.length} aplicatii pending`,
                 body: 'Verifica Leader Tools. Exista aplicatii care asteapta review.',
+                category: 'Leader',
             });
         }
 
@@ -1217,6 +1317,7 @@
         const invites = rows.filter((row) => row.title.startsWith('Invite')).length;
         const pending = rows.filter((row) => row.label === 'PENDING' || row.label === 'LEADER').length;
         const purchases = rows.filter((row) => row.icon === 'fa-gem').length;
+        const spotlight = rows[0];
 
         summary.innerHTML = `
             <div class="overview-card">
@@ -1246,15 +1347,25 @@
             return;
         }
 
-        feed.innerHTML = rows.map((row) => `
+        const spotlightHtml = spotlight ? `
+            <div class="notice-spotlight">
+                <div class="eyebrow">Prioritatea ta acum</div>
+                <div class="headline">${safeHtml(spotlight.title)}</div>
+                <div class="sub">${safeHtml(spotlight.body || '')} | ${safeHtml(fmtRelativeTime(spotlight.ts))}</div>
+            </div>
+        ` : '';
+        const feedRows = spotlight ? rows.slice(1) : rows;
+
+        feed.innerHTML = spotlightHtml + feedRows.map((row) => `
             <div class="notice-card">
                 <div class="notice-icon"><i class="fas ${safeHtml(row.icon)}"></i></div>
                 <div class="notice-copy">
                     <div class="notice-meta">
-                        <span class="notice-title">${safeHtml(row.title)}</span>
                         <span class="badge ${row.tone}">${safeHtml(row.label)}</span>
+                        <span class="badge badge-gray">${safeHtml(row.category || 'Panel')}</span>
                         <span class="notice-time">${fmtDate(row.ts)}</span>
                     </div>
+                    <div class="notice-title">${safeHtml(row.title)}</div>
                     <div class="notice-body">${safeHtml(row.body || '')}</div>
                 </div>
             </div>
@@ -1465,6 +1576,19 @@
         const d = new Date(Number(ts));
         if (Number.isNaN(d.getTime())) return "-";
         return d.toLocaleString("ro-RO");
+    }
+
+    function fmtRelativeTime(ts) {
+        const value = Number(ts || 0);
+        if (!value) return "Acum";
+        const diff = Date.now() - value;
+        if (diff < 60_000) return "Acum";
+        const mins = Math.floor(diff / 60_000);
+        if (mins < 60) return `${mins} min in urma`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `${hours}h in urma`;
+        const days = Math.floor(hours / 24);
+        return `${days} zi${days === 1 ? "" : "le"} in urma`;
     }
 
     function appStatusInfo(rawStatus) {
@@ -1937,6 +2061,35 @@
         await loadAllUsers();
         await refreshPPShop();
         await refreshFactionHub();
+    };
+
+    window.setSpawnPreference = async function(preference) {
+        if (!currentProfileData) {
+            setStatusLine("property-spawn-status", false, "Profilul nu este incarcat inca.");
+            return;
+        }
+
+        const normalized = normalizeSpawnPreference(preference);
+        if (normalized === "House" && !hasHouseAccess(currentProfileData)) {
+            setStatusLine("property-spawn-status", false, "Nu ai casa sau chirie activa pentru optiunea House.");
+            return;
+        }
+
+        const data = await panelApi("set_spawn_preference", { preference: normalized });
+        if (!data.ok) {
+            setStatusLine("property-spawn-status", false, data.msg || "Nu am putut actualiza spawn preference.");
+            return;
+        }
+
+        currentProfileData = {
+            ...currentProfileData,
+            spawn_preferat: normalized,
+            spawn_actual: normalized,
+            spawn_updated_at: Date.now(),
+        };
+        renderProfileOverview(currentProfileData);
+        renderPropertiesPage(currentProfileData);
+        setStatusLine("property-spawn-status", true, data.msg || `Spawn preference setat pe ${normalized}.`);
     };
 
     // ---- REPORTS ----
