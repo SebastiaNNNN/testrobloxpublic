@@ -404,6 +404,19 @@
         .faction-card-item .fname { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 6px; }
         .faction-card-item .fcount { font-size: 12px; color: #64748b; }
         .faction-card-item .fcount span { color: #00ff88; font-weight: 700; }
+        .faction-briefing-card {
+            margin-top:14px;
+            background: linear-gradient(155deg, rgba(0,255,136,0.08), rgba(17,24,39,0.95) 48%);
+            border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px;
+        }
+        .faction-briefing-title { font-size:18px; font-weight:900; color:#fff; }
+        .faction-briefing-sub { margin-top:8px; color:#94a3b8; font-size:13px; line-height:1.6; }
+        .faction-briefing-grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:12px; margin-top:16px; }
+        .faction-briefing-block {
+            background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:14px;
+        }
+        .faction-briefing-block .k { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; font-weight:800; }
+        .faction-briefing-block .v { color:#e2e8f0; font-size:13px; font-weight:600; margin-top:8px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
 
         .split-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .status-line {
@@ -452,6 +465,7 @@
             .garage-focus-grid { grid-template-columns: 1fr 1fr; }
             .property-detail-grid { grid-template-columns: 1fr; }
             .leader-detail-grid { grid-template-columns: 1fr; }
+            .faction-briefing-grid { grid-template-columns: 1fr; }
             .pref-btn { width: 100%; }
             .leader-settings-grid { grid-template-columns: 1fr; }
             .leader-shell { grid-template-columns: 1fr; }
@@ -757,13 +771,14 @@
             <!-- Members -->
             <div class="card" id="faction-detail" style="display:none">
                 <div class="card-title"><i class="fas fa-users"></i> Membri: <span id="fd-name" style="color:#00ff88"></span></div>
+                <div id="faction-public-settings"></div>
                 <div class="search-bar">
                     <input id="faction-member-q" type="text" placeholder="Filtrează după nume...">
                     <button class="search-btn" onclick="filterFactionMembers()"><i class="fas fa-filter"></i> Filtrare</button>
                 </div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Jucător</th><th>Rank</th><th>Level</th><th>Cash</th><th>Last Online</th></tr></thead>
+                        <thead><tr><th>Jucător</th><th>Rank</th><th>Level</th><th>Economie</th><th>Last Online</th></tr></thead>
                         <tbody id="faction-members-body"><tr><td colspan="5" class="empty-msg">Selectează o facțiune.</td></tr></tbody>
                     </table>
                 </div>
@@ -775,9 +790,12 @@
                     <div id="open-factions-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>
                     <div class="field" style="margin-bottom:12px">
                         <label>Factiune</label>
-                        <select id="apply-faction" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;">
+                        <select id="apply-faction" onchange="onApplyFactionChange()" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;">
                             <option value="">Alege factiunea</option>
                         </select>
+                    </div>
+                    <div id="apply-faction-briefing">
+                        <div class="empty-panel" style="padding:18px">Alege o factiune deschisa ca sa vezi descrierea, regulile si modelul de aplicatie.</div>
                     </div>
                     <div class="field" style="margin-bottom:12px">
                         <label>Nume (doar litere, max 15)</label>
@@ -1813,8 +1831,8 @@
         const pdLvEl = document.getElementById('pd-level');
         if (pdAdm > 0) { pdLvEl.textContent = '⚡ STAFF'; pdLvEl.className = 'badge badge-red'; }
         else { pdLvEl.textContent = 'Lv. ' + (d.level||1); pdLvEl.className = 'badge badge-orange'; }
-        document.getElementById('pd-cash').innerText = '$' + fmt(d.banii_cash);
-        document.getElementById('pd-bank').innerText = '$' + fmt(d.banii_banca);
+        document.getElementById('pd-cash').innerText = publicEconomyMask();
+        document.getElementById('pd-bank').innerText = publicEconomyMask();
         document.getElementById('pd-hours').innerText = (d.ore_jucate||0) + 'h';
         document.getElementById('pd-rp').innerText = fmt(d.rp);
         const cars = Array.isArray(d.masini) ? d.masini : [];
@@ -1881,6 +1899,7 @@
             .sort((a,b) => (b[1].rank||0)-(a[1].rank||0) || (b[1].level||0)-(a[1].level||0));
         document.getElementById('fd-name').innerText = faction;
         document.getElementById('faction-detail').style.display = 'block';
+        renderFactionPublicSettings(faction, "faction-public-settings", "browse");
         renderFactionMembers(allFactionMembers);
         document.getElementById('faction-detail').scrollIntoView({ behavior: 'smooth' });
     }
@@ -1894,7 +1913,7 @@
                 <td><strong>${name}</strong></td>
                 <td>${d.rank||0}</td>
                 <td>${lvCell}</td>
-                <td>$${fmt(d.banii_cash)}</td>
+                <td>${publicEconomyMask()}</td>
                 <td style="color:#64748b">${d.last_online||'—'}</td>
             </tr>`;
         }).join('') : '<tr><td colspan="5" class="empty-msg">Niciun membru.</td></tr>';
@@ -1945,6 +1964,10 @@
         if (status === "joined") return { label: "JOINED", cls: "badge-blue" };
         if (status.startsWith("archived")) return { label: "ARCHIVED", cls: "badge-gray" };
         return { label: status.toUpperCase(), cls: "badge-gray" };
+    }
+
+    function publicEconomyMask() {
+        return "Ascuns";
     }
 
     function sanitizeApplyName(value) {
@@ -2103,6 +2126,56 @@
         metaEl.innerHTML = updatedAt
             ? `Ultima modificare: <strong>${safeHtml(fmtDate(updatedAt))}</strong><br>De catre: <strong>${safeHtml(updatedBy || "necunoscut")}</strong>${leaderSettingsDirty ? "<br>Ai un draft nesalvat in editor." : ""}`
             : `Setari pregatite pentru factiunea ta.${leaderSettingsDirty ? "<br>Ai un draft nesalvat in editor." : ""}`;
+    }
+
+    function getFactionPublicSettings(factionName) {
+        const map = hubSnapshot?.faction_settings_public;
+        if (!map || !factionName) return null;
+        return map[String(factionName)] || null;
+    }
+
+    function renderFactionPublicSettings(factionName, targetId = "apply-faction-briefing", mode = "apply") {
+        const root = document.getElementById(targetId);
+        if (!root) return;
+        const settings = getFactionPublicSettings(factionName);
+        if (!factionName || !settings) {
+            root.innerHTML = `<div class="empty-panel" style="padding:18px">${mode === "apply" ? "Alege o factiune deschisa ca sa vezi descrierea, regulile si modelul de aplicatie." : "Selecteaza o factiune ca sa vezi briefing-ul public."}</div>`;
+            return;
+        }
+
+        const cfg = (hubSnapshot?.game_factions || []).find((row) => String(row.name || "") === String(factionName)) || {};
+        const levelReq = Number(cfg.level_req || 1);
+        const appsOpen = !!cfg.apps_open;
+        root.innerHTML = `
+            <div class="faction-briefing-card">
+                <div class="section-row" style="margin-bottom:0">
+                    <div>
+                        <div class="faction-briefing-title">${safeHtml(factionName)}</div>
+                        <div class="faction-briefing-sub">${safeHtml(settings.description || "-")}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <span class="badge ${appsOpen ? "badge-green" : "badge-red"}">${appsOpen ? "OPEN" : "CLOSED"}</span>
+                        <span class="badge badge-blue">Lv ${levelReq}+</span>
+                    </div>
+                </div>
+                <div class="faction-briefing-grid">
+                    <div class="faction-briefing-block">
+                        <div class="k">Reguli Rapide</div>
+                        <div class="v">${safeHtml(settings.rules || "-")}</div>
+                    </div>
+                    <div class="faction-briefing-block">
+                        <div class="k">Model Aplicatie</div>
+                        <div class="v">${safeHtml(settings.application_model || "-")}</div>
+                    </div>
+                    <div class="faction-briefing-block">
+                        <div class="k">${mode === "apply" ? "Cum Aplici" : "Briefing Public"}</div>
+                        <div class="v">${mode === "apply"
+                            ? "Citeste briefing-ul, raspunde curat si dezvoltat in formular, apoi trimite aplicatia doar daca esti eligibil."
+                            : "Zona asta e publica in panel, ca membrii si candidatii sa stie tonul, regulile si asteptarile factiunii."}</div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     function leaderRankLabel(member) {
@@ -2316,6 +2389,11 @@
         renderLeaderApplications(leaderPendingApps);
     };
 
+    window.onApplyFactionChange = function() {
+        const faction = String(document.getElementById("apply-faction")?.value || "");
+        renderFactionPublicSettings(faction, "apply-faction-briefing", "apply");
+    };
+
     window.filterLeaderApplications = function() {
         renderLeaderApplications(leaderPendingApps);
     };
@@ -2527,6 +2605,7 @@
         } else if (allowed.length === 1) {
             select.value = allowed[0];
         }
+        renderFactionPublicSettings(select.value || allowed[0] || "", "apply-faction-briefing", "apply");
     }
 
     async function refreshFactionHub() {

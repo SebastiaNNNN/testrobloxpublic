@@ -467,6 +467,10 @@ def _handle_list_hub(identity: dict, users: dict):
 
     available = [row["name"] for row in game_factions] if game_factions else _available_factions(users)
     open_factions = [row["name"] for row in game_factions if row.get("apps_open")] if game_factions else []
+    faction_settings_public = {
+        row["name"]: _load_faction_settings(row["name"], auth_token=auth_token, faction_cfg=row)
+        for row in game_factions
+    }
 
     all_apps = _flatten_apps(firebase_get("panel/faction_applications", auth_token=auth_token)[1])
     my_apps = []
@@ -586,6 +590,7 @@ def _handle_list_hub(identity: dict, users: dict):
         "available_factions": available,
         "open_factions": open_factions,
         "game_factions": game_factions,
+        "faction_settings_public": faction_settings_public,
         "my_applications": my_apps,
         "leader_pending_apps": leader_pending,
         "leader_members": leader_members,
