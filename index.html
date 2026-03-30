@@ -398,17 +398,17 @@
 <!-- OVERLAY VERIFICARE -->
 <div id="verify-overlay">
     <div class="verify-box">
-        <div class="verify-icon">âš ï¸</div>
+        <div class="verify-icon">⚠️</div>
         <div class="verify-title">Cont Neverificat</div>
         <div class="verify-sub">
-            Trebuie sÄƒ confirmi cÄƒ eÈ™ti proprietarul contului <strong id="verify-name" style="color:#00ff88"></strong>.<br>
-            IntrÄƒ pe server È™i scrie Ã®n chat:
+            Trebuie să confirmi că ești proprietarul contului <strong id="verify-name" style="color:#00ff88"></strong>.<br>
+            Intră pe server și scrie în chat:
         </div>
         <div class="code-display" id="verification-code" title="Click pentru copiere">Generare cod...</div>
-        <div class="verify-note">Ecranul dispare automat dupÄƒ verificare.</div>
+        <div class="verify-note">Ecranul dispare automat după verificare.</div>
         <div class="verify-actions">
-            <button class="v-btn primary" onclick="activeazaVerificarea()">ðŸ”„ Cod Nou</button>
-            <button class="v-btn secondary" onclick="logoutUser()">IeÈ™ire</button>
+            <button class="v-btn primary" onclick="activeazaVerificarea()">🔄 Cod Nou</button>
+            <button class="v-btn secondary" onclick="logoutUser()">Ieșire</button>
         </div>
     </div>
 </div>
@@ -425,24 +425,24 @@
     <div class="auth-card" id="login-card">
         <div class="auth-logo">SEVID<span>RP</span></div>
         <div class="auth-sub">Panelul oficial al serverului</div>
-        <h2>ðŸ” Autentificare</h2>
+        <h2>🔐 Autentificare</h2>
         <div class="field">
             <label>Email</label>
             <input type="email" id="login-email" placeholder="email@exemplu.com" autocomplete="email">
         </div>
         <div class="field">
-            <label>ParolÄƒ</label>
-            <input type="password" id="login-pass" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autocomplete="current-password">
+            <label>Parolă</label>
+            <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
         </div>
-        <button class="auth-btn" onclick="loginUser()">IntrÄƒ Ã®n cont</button>
-        <div class="auth-toggle">Nu ai cont? <a onclick="showCard('reg-card')">ÃŽnregistreazÄƒ-te</a></div>
+        <button class="auth-btn" onclick="loginUser()">Intră în cont</button>
+        <div class="auth-toggle">Nu ai cont? <a onclick="showCard('reg-card')">Înregistrează-te</a></div>
     </div>
 
     <!-- REGISTER FORM -->
     <div class="auth-card" id="reg-card" style="display:none">
         <div class="auth-logo">SEVID<span>RP</span></div>
-        <div class="auth-sub">CreeazÄƒ-È›i contul gratuit</div>
-        <h2>ðŸ“ ÃŽnregistrare</h2>
+        <div class="auth-sub">Creează-ți contul gratuit</div>
+        <h2>📝 Înregistrare</h2>
         <div class="field">
             <label>Nume Roblox (exact)</label>
             <input type="text" id="reg-roblox" placeholder="ex: sebyk" autocomplete="off">
@@ -452,11 +452,11 @@
             <input type="email" id="reg-email" placeholder="email@exemplu.com" autocomplete="email">
         </div>
         <div class="field">
-            <label>ParolÄƒ</label>
+            <label>Parolă</label>
             <input type="password" id="reg-pass" placeholder="minim 6 caractere" autocomplete="new-password">
         </div>
-        <button class="auth-btn" onclick="registerUser()">CreeazÄƒ Cont</button>
-        <div class="auth-toggle">Ai deja cont? <a onclick="showCard('login-card')">LogheazÄƒ-te</a></div>
+        <button class="auth-btn" onclick="registerUser()">Creează Cont</button>
+        <div class="auth-toggle">Ai deja cont? <a onclick="showCard('login-card')">Loghează-te</a></div>
     </div>
 </div>
 
@@ -478,10 +478,10 @@
             <div class="nav-item" data-page="garage" onclick="goPage('garage')"><i class="fas fa-car"></i> Garage</div>
             <div class="nav-item" data-page="properties" onclick="goPage('properties')"><i class="fas fa-house"></i> Properties</div>
             <div class="nav-item" data-page="notifications" onclick="goPage('notifications')"><i class="fas fa-bell"></i> Notifications<span id="nav-notifications-badge" class="nav-badge" style="display:none">0</span></div>
-            <div class="nav-item" data-page="players" onclick="goPage('players')"><i class="fas fa-users"></i> JucÄƒtori</div>
+            <div class="nav-item" data-page="players" onclick="goPage('players')"><i class="fas fa-users"></i> Jucători</div>
             <div class="nav-item" data-page="factions" onclick="goPage('factions')"><i class="fas fa-shield-alt"></i> Faction Hub</div>
             <div class="nav-item" data-page="ppshop" onclick="goPage('ppshop')"><i class="fas fa-gem"></i> PP Shop</div>
-            <div class="nav-item" data-page="reports" onclick="goPage('reports')"><i class="fas fa-flag"></i> ReclamaÈ›ii</div>
+            <div class="nav-item" data-page="reports" onclick="goPage('reports')"><i class="fas fa-flag"></i> Reclamații</div>
         </nav>
         <div class="sidebar-bottom">
             <button class="logout-btn" onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Deconectare</button>
@@ -498,18 +498,18 @@
                 <p>Bine ai venit pe panelul SEVID RP!</p>
             </div>
             <div class="stat-grid" id="dash-stats">
-                <div class="stat-card"><div class="stat-label">JucÄƒtori ÃŽnregistraÈ›i</div><div class="stat-val green" id="ds-players">â€”</div></div>
-                <div class="stat-card"><div class="stat-label">FacÈ›iuni Active</div><div class="stat-val blue" id="ds-factions">â€”</div></div>
-                <div class="stat-card"><div class="stat-label">Banii TÄƒi Cash</div><div class="stat-val" id="ds-cash">â€”</div></div>
-                <div class="stat-card"><div class="stat-label">Banii la BancÄƒ</div><div class="stat-val" id="ds-bank">â€”</div></div>
-                <div class="stat-card"><div class="stat-label">Premium Points</div><div class="stat-val green" id="ds-pp">â€”</div></div>
+                <div class="stat-card"><div class="stat-label">Jucători Înregistrați</div><div class="stat-val green" id="ds-players">—</div></div>
+                <div class="stat-card"><div class="stat-label">Facțiuni Active</div><div class="stat-val blue" id="ds-factions">—</div></div>
+                <div class="stat-card"><div class="stat-label">Banii Tăi Cash</div><div class="stat-val" id="ds-cash">—</div></div>
+                <div class="stat-card"><div class="stat-label">Banii la Bancă</div><div class="stat-val" id="ds-bank">—</div></div>
+                <div class="stat-card"><div class="stat-label">Premium Points</div><div class="stat-val green" id="ds-pp">—</div></div>
             </div>
             <div class="card">
-                <div class="card-title"><i class="fas fa-trophy"></i> Top BogaÈ›i</div>
+                <div class="card-title"><i class="fas fa-trophy"></i> Top Bogați</div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>#</th><th>JucÄƒtor</th><th>FacÈ›iune</th><th>Total</th></tr></thead>
-                        <tbody id="top-rich-body"><tr><td colspan="4" class="empty-msg">Se incarcÄƒ...</td></tr></tbody>
+                        <thead><tr><th>#</th><th>Jucător</th><th>Facțiune</th><th>Total</th></tr></thead>
+                        <tbody id="top-rich-body"><tr><td colspan="4" class="empty-msg">Se încarcă...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -525,7 +525,7 @@
                 <div class="profile-hero">
                     <img id="prof-avatar" class="profile-avatar-big" src="" alt="avatar">
                     <div class="profile-info">
-                        <h2 id="prof-name">â€”</h2>
+                        <h2 id="prof-name">—</h2>
                         <div class="tag">
                             <span class="badge badge-blue" id="prof-faction">Civil</span>
                             <span class="badge badge-green" id="prof-rank-badge">Rank 0</span>
@@ -535,13 +535,13 @@
                 </div>
                 <div class="kv-grid">
                     <div class="kv-item"><div class="k">Cash</div><div class="v" id="p-cash">$0</div></div>
-                    <div class="kv-item"><div class="k">BancÄƒ</div><div class="v" id="p-bank">$0</div></div>
+                    <div class="kv-item"><div class="k">Bancă</div><div class="v" id="p-bank">$0</div></div>
                     <div class="kv-item"><div class="k">Ore Jucate</div><div class="v" id="p-hours">0h</div></div>
                     <div class="kv-item"><div class="k">RP Points</div><div class="v" id="p-rp">0</div></div>
                     <div class="kv-item"><div class="k">Premium Points</div><div class="v" id="p-pp">0</div></div>
-                    <div class="kv-item"><div class="k">CasÄƒ ID</div><div class="v" id="p-house">â€”</div></div>
-                    <div class="kv-item"><div class="k">Job Curent</div><div class="v" id="p-job">â€”</div></div>
-                    <div class="kv-item"><div class="k">MaÈ™ini</div><div class="v" id="p-cars">0</div></div>
+                    <div class="kv-item"><div class="k">Casă ID</div><div class="v" id="p-house">—</div></div>
+                    <div class="kv-item"><div class="k">Job Curent</div><div class="v" id="p-job">—</div></div>
+                    <div class="kv-item"><div class="k">Mașini</div><div class="v" id="p-cars">0</div></div>
                     <div class="kv-item"><div class="k">Slot Garaj</div><div class="v" id="p-slots">2</div></div>
                 </div>
             </div>
@@ -631,18 +631,18 @@
 <!-- JUCATORI -->
         <div class="page" id="page-players">
             <div class="page-header">
-                <h1>JucÄƒtori</h1>
-                <p>CautÄƒ orice jucÄƒtor de pe server</p>
+                <h1>Jucători</h1>
+                <p>Caută orice jucător de pe server</p>
             </div>
             <div class="card">
                 <div class="search-bar">
-                    <input type="text" id="players-q" placeholder="CautÄƒ dupÄƒ nume Roblox...">
-                    <button class="search-btn" onclick="searchPlayers()"><i class="fas fa-search"></i> CautÄƒ</button>
+                    <input type="text" id="players-q" placeholder="Caută după nume Roblox...">
+                    <button class="search-btn" onclick="searchPlayers()"><i class="fas fa-search"></i> Caută</button>
                 </div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>JucÄƒtor</th><th>FacÈ›iune</th><th>Rank</th><th>Level</th><th>Last Online</th></tr></thead>
-                        <tbody id="players-body"><tr><td colspan="5" class="empty-msg">Scrie un nume pentru a cÄƒuta.</td></tr></tbody>
+                        <thead><tr><th>Jucător</th><th>Facțiune</th><th>Rank</th><th>Level</th><th>Last Online</th></tr></thead>
+                        <tbody id="players-body"><tr><td colspan="5" class="empty-msg">Scrie un nume pentru a căuta.</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -652,7 +652,7 @@
                 <div class="profile-hero">
                     <img id="pd-avatar" class="profile-avatar-big" src="" alt="">
                     <div class="profile-info">
-                        <h2 id="pd-rp-name">â€”</h2>
+                        <h2 id="pd-rp-name">—</h2>
                         <div class="tag">
                             <span class="badge badge-blue" id="pd-faction">Civil</span>
                             <span class="badge badge-green" id="pd-rank">Rank 0</span>
@@ -662,11 +662,11 @@
                 </div>
                 <div class="kv-grid">
                     <div class="kv-item"><div class="k">Cash</div><div class="v" id="pd-cash">$0</div></div>
-                    <div class="kv-item"><div class="k">BancÄƒ</div><div class="v" id="pd-bank">$0</div></div>
+                    <div class="kv-item"><div class="k">Bancă</div><div class="v" id="pd-bank">$0</div></div>
                     <div class="kv-item"><div class="k">Ore Jucate</div><div class="v" id="pd-hours">0h</div></div>
                     <div class="kv-item"><div class="k">RP Points</div><div class="v" id="pd-rp">0</div></div>
-                    <div class="kv-item"><div class="k">MaÈ™ini</div><div class="v" id="pd-cars">0</div></div>
-                    <div class="kv-item"><div class="k">Last Online</div><div class="v" id="pd-seen">â€”</div></div>
+                    <div class="kv-item"><div class="k">Mașini</div><div class="v" id="pd-cars">0</div></div>
+                    <div class="kv-item"><div class="k">Last Online</div><div class="v" id="pd-seen">—</div></div>
                 </div>
             </div>
         </div>
@@ -678,22 +678,22 @@
                 <p>Aplicatii, membri, leader tools si management de factiune</p>
             </div>
             <div class="card">
-                <div class="card-title"><i class="fas fa-layer-group"></i> DistribuÈ›ie JucÄƒtori</div>
+                <div class="card-title"><i class="fas fa-layer-group"></i> Distribuție Jucători</div>
                 <div class="faction-cards" id="faction-overview">
-                    <div class="empty-msg">Se incarcÄƒ...</div>
+                    <div class="empty-msg">Se încarcă...</div>
                 </div>
             </div>
             <!-- Members -->
             <div class="card" id="faction-detail" style="display:none">
                 <div class="card-title"><i class="fas fa-users"></i> Membri: <span id="fd-name" style="color:#00ff88"></span></div>
                 <div class="search-bar">
-                    <input id="faction-member-q" type="text" placeholder="FiltreazÄƒ dupÄƒ nume...">
+                    <input id="faction-member-q" type="text" placeholder="Filtrează după nume...">
                     <button class="search-btn" onclick="filterFactionMembers()"><i class="fas fa-filter"></i> Filtrare</button>
                 </div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>JucÄƒtor</th><th>Rank</th><th>Level</th><th>Cash</th><th>Last Online</th></tr></thead>
-                        <tbody id="faction-members-body"><tr><td colspan="5" class="empty-msg">SelecteazÄƒ o facÈ›iune.</td></tr></tbody>
+                        <thead><tr><th>Jucător</th><th>Rank</th><th>Level</th><th>Cash</th><th>Last Online</th></tr></thead>
+                        <tbody id="faction-members-body"><tr><td colspan="5" class="empty-msg">Selectează o facțiune.</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -805,13 +805,13 @@
         <!-- RECLAMATII -->
         <div class="page" id="page-reports">
             <div class="page-header">
-                <h1>ReclamaÈ›ii</h1>
-                <p>Trimite o reclamaÈ›ie administratorilor</p>
+                <h1>Reclamații</h1>
+                <p>Trimite o reclamație administratorilor</p>
             </div>
             <div class="card">
-                <div class="card-title"><i class="fas fa-flag"></i> ReclamaÈ›ie NouÄƒ</div>
+                <div class="card-title"><i class="fas fa-flag"></i> Reclamație Nouă</div>
                 <div class="field" style="margin-bottom:14px">
-                    <label>JucÄƒtorul reclamat</label>
+                    <label>Jucătorul reclamat</label>
                     <input type="text" id="rep-target" placeholder="Nume exact Roblox">
                 </div>
                 <div class="field" style="margin-bottom:14px">
@@ -822,7 +822,7 @@
                     <label>Descriere</label>
                     <textarea id="rep-desc" placeholder="Descrie ce s-a intamplat..." style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;resize:vertical;min-height:100px;font-family:inherit"></textarea>
                 </div>
-                <button class="search-btn" style="width:100%;padding:14px" onclick="sendReport()"><i class="fas fa-paper-plane"></i> Trimite ReclamaÈ›ie</button>
+                <button class="search-btn" style="width:100%;padding:14px" onclick="sendReport()"><i class="fas fa-paper-plane"></i> Trimite Reclamație</button>
                 <div id="rep-status" style="margin-top:12px;display:none"></div>
             </div>
         </div>
@@ -1578,15 +1578,15 @@
             document.getElementById('prof-rank-badge').innerText = 'Rank ' + (d.rank || 0);
             const adminLv = parseInt(d.admin||0);
             const lvBadge = document.getElementById('prof-level-badge');
-            if (adminLv > 0) { lvBadge.textContent = 'âš¡ STAFF'; lvBadge.className = 'badge badge-red'; }
+            if (adminLv > 0) { lvBadge.textContent = '⚡ STAFF'; lvBadge.className = 'badge badge-red'; }
             else { lvBadge.textContent = 'Lv. ' + (d.level || 1); lvBadge.className = 'badge badge-orange'; }
             document.getElementById('p-cash').innerText = '$' + fmt(d.banii_cash);
             document.getElementById('p-bank').innerText = '$' + fmt(d.banii_banca);
             document.getElementById('p-hours').innerText = (d.ore_jucate || 0) + 'h';
             document.getElementById('p-rp').innerText = fmt(d.rp);
             document.getElementById('p-pp').innerText = fmt(d.premium_points || 0);
-            document.getElementById('p-house').innerText = d.casa_detinuta > 0 ? 'ID ' + d.casa_detinuta : 'â€”';
-            document.getElementById('p-job').innerText = d.job_curent || 'â€”';
+            document.getElementById('p-house').innerText = d.casa_detinuta > 0 ? 'ID ' + d.casa_detinuta : '—';
+            document.getElementById('p-job').innerText = d.job_curent || '—';
             const cars = Array.isArray(d.masini) ? d.masini : [];
             document.getElementById('p-cars').innerText = cars.length;
             document.getElementById('p-slots').innerText = d.sloturi_garaj || 2;
@@ -1619,7 +1619,7 @@
                 <td><strong>${p.name}</strong></td>
                 <td><span class="badge badge-blue">${p.faction}</span></td>
                 <td style="color:#00ff88;font-weight:700">$${fmt(p.total)}</td>
-            </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">Nu existÄƒ date.</td></tr>';
+            </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">Nu există date.</td></tr>';
     }
 
     // ---- PLAYERS ----
@@ -1628,18 +1628,18 @@
         const body = document.getElementById('players-body');
         const detail = document.getElementById('player-detail');
         detail.style.display = 'none';
-        if (!q) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Scrie un nume pentru a cÄƒuta.</td></tr>'; return; }
+        if (!q) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Scrie un nume pentru a căuta.</td></tr>'; return; }
         const results = Object.entries(allUsers)
             .filter(([name, d]) => name.toLowerCase().includes(q) || (d.nume_rp||'').toLowerCase().includes(q))
             .slice(0, 30);
-        if (!results.length) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Niciun jucÄƒtor gÄƒsit.</td></tr>'; return; }
+        if (!results.length) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Niciun jucător găsit.</td></tr>'; return; }
         body.innerHTML = results.map(([name, d]) => `
             <tr class="clickable-row" onclick="showPlayerDetail('${name}')">
                 <td><strong>${name}</strong>${d.nume_rp&&d.nume_rp!==name?' <span style="color:#64748b;font-size:11px;">(${d.nume_rp})</span>':''}</td>
                 <td><span class="badge badge-blue">${d.factiune||'Civil'}</span></td>
                 <td>${d.rank||0}</td>
                 <td>${d.level||1}</td>
-                <td style="color:#64748b">${d.last_online||'â€”'}</td>
+                <td style="color:#64748b">${d.last_online||'—'}</td>
             </tr>`).join('');
     }
 
@@ -1654,7 +1654,7 @@
         document.getElementById('pd-rank').innerText = 'Rank ' + (d.rank||0);
         const pdAdm = parseInt(d.admin||0);
         const pdLvEl = document.getElementById('pd-level');
-        if (pdAdm > 0) { pdLvEl.textContent = 'âš¡ STAFF'; pdLvEl.className = 'badge badge-red'; }
+        if (pdAdm > 0) { pdLvEl.textContent = '⚡ STAFF'; pdLvEl.className = 'badge badge-red'; }
         else { pdLvEl.textContent = 'Lv. ' + (d.level||1); pdLvEl.className = 'badge badge-orange'; }
         document.getElementById('pd-cash').innerText = '$' + fmt(d.banii_cash);
         document.getElementById('pd-bank').innerText = '$' + fmt(d.banii_banca);
@@ -1662,7 +1662,7 @@
         document.getElementById('pd-rp').innerText = fmt(d.rp);
         const cars = Array.isArray(d.masini) ? d.masini : [];
         document.getElementById('pd-cars').innerText = cars.length;
-        document.getElementById('pd-seen').innerText = d.last_online || 'â€”';
+        document.getElementById('pd-seen').innerText = d.last_online || '—';
         document.getElementById('player-detail').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -1732,13 +1732,13 @@
         const body = document.getElementById('faction-members-body');
         body.innerHTML = list.length ? list.map(([name, d]) => {
             const isStaff = parseInt(d.admin||0) > 0;
-            const lvCell = isStaff ? '<span class="badge badge-red">âš¡ STAFF</span>' : (d.level||1);
+            const lvCell = isStaff ? '<span class="badge badge-red">⚡ STAFF</span>' : (d.level||1);
             return `<tr>
                 <td><strong>${name}</strong></td>
                 <td>${d.rank||0}</td>
                 <td>${lvCell}</td>
                 <td>$${fmt(d.banii_cash)}</td>
-                <td style="color:#64748b">${d.last_online||'â€”'}</td>
+                <td style="color:#64748b">${d.last_online||'—'}</td>
             </tr>`;
         }).join('') : '<tr><td colspan="5" class="empty-msg">Niciun membru.</td></tr>';
     }
@@ -2367,20 +2367,20 @@
         const reason = document.getElementById('rep-reason').value.trim();
         const desc = document.getElementById('rep-desc').value.trim();
         const st = document.getElementById('rep-status');
-        if (!target || !reason || !desc) { Toast.fire({ icon: 'warning', title: 'CompleteazÄƒ toate cÃ¢mpurile!' }); return; }
+        if (!target || !reason || !desc) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
         try {
             await push(ref(db, 'reports'), {
                 from: currentRobloxName, target, reason, desc,
                 ts: Date.now(), status: 'pending'
             });
             st.style.display = 'block';
-            st.innerHTML = '<span style="color:#00ff88;font-weight:700">âœ… ReclamaÈ›ia a fost trimisÄƒ! Un admin o va verifica curÃ¢nd.</span>';
+            st.innerHTML = '<span style="color:#00ff88;font-weight:700">✅ Reclamația a fost trimisă! Un admin o va verifica curând.</span>';
             document.getElementById('rep-target').value = '';
             document.getElementById('rep-reason').value = '';
             document.getElementById('rep-desc').value = '';
         } catch(e) {
             st.style.display = 'block';
-            st.innerHTML = '<span style="color:#f87171">âŒ Eroare: ' + e.message + '</span>';
+            st.innerHTML = '<span style="color:#f87171">❌ Eroare: ' + e.message + '</span>';
         }
     }
 
@@ -2388,7 +2388,7 @@
     window.loginUser = async () => {
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-pass').value;
-        if(!email || !pass) { Toast.fire({ icon: 'warning', title: 'CompleteazÄƒ toate cÃ¢mpurile!' }); return; }
+        if(!email || !pass) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
         try {
             await signInWithEmailAndPassword(auth, email, pass);
         } catch(e) {
@@ -2400,17 +2400,17 @@
         const robloxName = document.getElementById('reg-roblox').value.trim();
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
-        if(!robloxName || !email || !pass) { Toast.fire({ icon: 'warning', title: 'CompleteazÄƒ toate cÃ¢mpurile!' }); return; }
+        if(!robloxName || !email || !pass) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
         if(!allUsers[robloxName]) {
-            Swal.fire({ icon: 'warning', title: 'JucÄƒtor NegÄƒsit', text: `Nu existÄƒ niciun jucÄƒtor cu numele "${robloxName}" Ã®n Firebase. JoacÄƒ mai Ã®ntÃ¢i pe server!` });
+            Swal.fire({ icon: 'warning', title: 'Jucător Negăsit', text: `Nu există niciun jucător cu numele "${robloxName}" în Firebase. Joacă mai întâi pe server!` });
             return;
         }
         try {
             const uc = await createUserWithEmailAndPassword(auth, email, pass);
             await set(ref(db, 'site_users/' + uc.user.uid), { robloxUsername: robloxName, email, verified: false });
-            Toast.fire({ icon: 'success', title: 'Cont creat! VerificÄƒ-È›i Roblox-ul.' });
+            Toast.fire({ icon: 'success', title: 'Cont creat! Verifică-ți Roblox-ul.' });
         } catch(e) {
-            Swal.fire({ icon: 'error', title: 'Eroare ÃŽnregistrare', text: e.message });
+            Swal.fire({ icon: 'error', title: 'Eroare Înregistrare', text: e.message });
         }
     }
 
@@ -2444,7 +2444,7 @@
     }
     updateApplyCounter();
 
-    // Secret admin shortcut â€” scrie 'admin' rapid pe tastaturÄƒ
+    // Secret admin shortcut — scrie 'admin' rapid pe tastatură
     let secretBuf = '';
     document.addEventListener('keydown', e => {
         secretBuf += e.key.toLowerCase();
@@ -2454,6 +2454,7 @@
 </script>
 </body>
 </html>
+
 
 
 
