@@ -1381,14 +1381,14 @@
                 document.getElementById('verify-overlay').style.display = 'none';
                 currentRobloxName = siteData.robloxUsername;
                 await loadAllUsers();
+                const route = pageFromLocation();
+                window.goPage(route.page, { ...route, history: false, replace: true });
                 showApp();
                 listenMyProfile(currentRobloxName);
                 loadDashboard();
                 renderShopItems();
                 await refreshFactionHub();
                 await refreshPPShop();
-                const route = pageFromLocation();
-                window.goPage(route.page, { ...route, history: false, replace: true });
             }
         } else {
             loading.style.display = 'none';
