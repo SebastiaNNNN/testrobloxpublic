@@ -211,6 +211,59 @@
         .kv-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px; }
         .kv-item .k { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
         .kv-item .v { font-size: 16px; font-weight: 700; color: #e2e8f0; margin-top: 4px; }
+        .section-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+        .section-sub { color:#64748b; font-size:12px; }
+        .overview-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; }
+        .overview-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px;
+        }
+        .overview-label { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:700; }
+        .overview-value { margin-top:8px; font-size:24px; font-weight:900; color:#fff; }
+        .overview-note { margin-top:6px; font-size:12px; color:#94a3b8; }
+        .garage-summary { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:14px; }
+        .garage-mini-stat { background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px; }
+        .garage-mini-stat .top { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:700; }
+        .garage-mini-stat .val { margin-top:8px; font-size:22px; font-weight:900; color:#fff; }
+        .garage-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; }
+        .garage-card {
+            background: linear-gradient(160deg, rgba(0,255,136,0.08), rgba(17,24,39,0.92) 45%);
+            border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:16px;
+        }
+        .garage-card-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+        .garage-card-name { font-size:18px; font-weight:900; color:#fff; }
+        .garage-card-model { margin-top:4px; color:#94a3b8; font-size:12px; }
+        .garage-card-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+        .garage-specs { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin-top:14px; }
+        .garage-spec { background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:10px; }
+        .garage-spec .k { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; }
+        .garage-spec .v { color:#e2e8f0; font-size:14px; font-weight:800; margin-top:4px; }
+        .progress-shell { height:10px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden; }
+        .progress-bar { height:100%; border-radius:999px; background:linear-gradient(90deg, #00ff88, #38bdf8); }
+        .property-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
+        .property-card {
+            background: linear-gradient(180deg, rgba(56,189,248,0.09), rgba(255,255,255,0.02));
+            border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px;
+        }
+        .property-card h3 { font-size:18px; font-weight:900; color:#fff; }
+        .property-card p { margin-top:8px; color:#94a3b8; font-size:13px; line-height:1.5; }
+        .notification-stack { display:flex; flex-direction:column; gap:12px; }
+        .notice-card {
+            display:flex; gap:14px; align-items:flex-start; background:rgba(255,255,255,0.03);
+            border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:14px;
+        }
+        .notice-icon {
+            width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+            background:rgba(0,255,136,0.12); color:#00ff88; font-size:15px; flex-shrink:0;
+        }
+        .notice-copy { flex:1; min-width:0; }
+        .notice-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+        .notice-title { font-size:14px; font-weight:800; color:#fff; }
+        .notice-body { color:#cbd5e1; font-size:13px; line-height:1.5; }
+        .notice-time { color:#64748b; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; }
+        .empty-panel {
+            border:1px dashed rgba(255,255,255,0.12); border-radius:14px; padding:28px; text-align:center; color:#64748b; font-size:13px;
+        }
 
         /* ---- FACTION GRID ---- */
         .faction-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
@@ -265,6 +318,7 @@
             .content { padding: 16px; }
             .stat-grid { grid-template-columns: 1fr 1fr; }
             .split-2 { grid-template-columns: 1fr; }
+            .garage-specs { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -355,6 +409,9 @@
         <nav class="sidebar-nav">
             <div class="nav-item active" data-page="dash" onclick="goPage('dash')"><i class="fas fa-chart-bar"></i> Dashboard</div>
             <div class="nav-item" data-page="profile" onclick="goPage('profile')"><i class="fas fa-user"></i> Profilul Meu</div>
+            <div class="nav-item" data-page="garage" onclick="goPage('garage')"><i class="fas fa-car"></i> Garage</div>
+            <div class="nav-item" data-page="properties" onclick="goPage('properties')"><i class="fas fa-house"></i> Properties</div>
+            <div class="nav-item" data-page="notifications" onclick="goPage('notifications')"><i class="fas fa-bell"></i> Notifications</div>
             <div class="nav-item" data-page="players" onclick="goPage('players')"><i class="fas fa-users"></i> Jucători</div>
             <div class="nav-item" data-page="factions" onclick="goPage('factions')"><i class="fas fa-shield-alt"></i> Faction Hub</div>
             <div class="nav-item" data-page="ppshop" onclick="goPage('ppshop')"><i class="fas fa-gem"></i> PP Shop</div>
@@ -423,17 +480,88 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-title"><i class="fas fa-car"></i> Garaj Personal</div>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>Model</th><th>Nume</th><th>Culoare</th><th>KM</th><th>Status</th></tr></thead>
-                        <tbody id="my-garage"><tr><td colspan="5" class="empty-msg">Nicio mașină.</td></tr></tbody>
-                    </table>
+                <div class="section-row">
+                    <div>
+                        <div class="card-title" style="margin-bottom:6px"><i class="fas fa-bolt"></i> Rezumat Rapid</div>
+                        <div class="section-sub">Un overview mai curat pentru cont, masini si proprietati.</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="tiny-btn" onclick="goPage('garage')">Deschide Garage</button>
+                        <button class="tiny-btn" onclick="goPage('properties')">Deschide Properties</button>
+                    </div>
+                </div>
+                <div class="overview-grid" id="profile-overview-grid"></div>
+            </div>
+            <div class="split-2">
+                <div class="card">
+                    <div class="section-row">
+                        <div>
+                            <div class="card-title" style="margin-bottom:6px"><i class="fas fa-car-side"></i> Garage Preview</div>
+                            <div class="section-sub">Primele masini din cont, cu status si info rapide.</div>
+                        </div>
+                    </div>
+                    <div class="garage-grid" id="profile-garage-preview"></div>
+                </div>
+                <div class="card">
+                    <div class="section-row">
+                        <div>
+                            <div class="card-title" style="margin-bottom:6px"><i class="fas fa-key"></i> Property Preview</div>
+                            <div class="section-sub">Locuinta, chirie si spawn preference din sync-ul de joc.</div>
+                        </div>
+                    </div>
+                    <div class="property-grid" id="profile-property-preview"></div>
                 </div>
             </div>
         </div>
 
-        <!-- JUCATORI -->
+        <div class="page" id="page-garage">
+            <div class="page-header">
+                <h1>Garage</h1>
+                <p>Garajul tau complet, cu statusuri, sloturi si detalii mai clare.</p>
+            </div>
+            <div class="garage-summary" id="garage-summary"></div>
+            <div class="card">
+                <div class="section-row">
+                    <div>
+                        <div class="card-title" style="margin-bottom:6px"><i class="fas fa-warehouse"></i> Masinile Tale</div>
+                        <div class="section-sub">Aici mutam partea buna, nu doar tabelul sec din profil.</div>
+                    </div>
+                    <div style="min-width:220px;">
+                        <div class="section-sub" style="margin-bottom:6px;">Ocupare sloturi</div>
+                        <div class="progress-shell"><div id="garage-usage-bar" class="progress-bar" style="width:0%"></div></div>
+                        <div id="garage-usage-text" class="muted-note">0 / 0 sloturi</div>
+                    </div>
+                </div>
+                <div class="garage-grid" id="garage-cards"></div>
+            </div>
+        </div>
+
+        <div class="page" id="page-properties">
+            <div class="page-header">
+                <h1>Properties</h1>
+                <p>Tot ce tine de locuinta, chirie, spawn si locurile tale importante.</p>
+            </div>
+            <div class="overview-grid" id="property-summary-grid"></div>
+            <div class="property-grid" id="property-cards"></div>
+        </div>
+
+        <div class="page" id="page-notifications">
+            <div class="page-header">
+                <h1>Notifications</h1>
+                <p>Invite-uri, raspunsuri la aplicatii si cumparaturi PP intr-un singur feed.</p>
+            </div>
+            <div class="overview-grid" id="notification-summary-grid"></div>
+            <div class="card">
+                <div class="section-row">
+                    <div>
+                        <div class="card-title" style="margin-bottom:6px"><i class="fas fa-inbox"></i> Inbox Panel</div>
+                        <div class="section-sub">Se actualizeaza din Faction Hub si PP Shop.</div>
+                    </div>
+                </div>
+                <div class="notification-stack" id="notifications-feed"></div>
+            </div>
+        </div>
+<!-- JUCATORI -->
         <div class="page" id="page-players">
             <div class="page-header">
                 <h1>Jucători</h1>
@@ -662,6 +790,7 @@
     let hubSnapshot = null;
     let leaderAppMap = {};
     let factionHubInterval = null;
+    let currentProfileData = null;
 
     const SHOP_ITEMS = [
         { id: "cash_10k", name: "$10,000 Cash", cost: 10, desc: "Boost rapid pentru inceput.", kind: "cash", amount: 10000 },
@@ -695,6 +824,17 @@
             }, 15000);
         }
         if(page === 'ppshop') {
+            refreshPPShop();
+        }
+        if(page === 'garage') {
+            renderGaragePage(currentProfileData);
+        }
+        if(page === 'properties') {
+            renderPropertiesPage(currentProfileData);
+        }
+        if(page === 'notifications') {
+            renderNotificationsPage();
+            refreshFactionHub();
             refreshPPShop();
         }
     }
@@ -769,10 +909,343 @@
         document.getElementById('app').style.display = 'flex';
     }
 
+    function getCarStatusMeta(status) {
+        const raw = String(status || '').trim().toLowerCase();
+        if (raw === 'spawned') return { label: 'Spawned', badge: 'badge-blue', tone: 'In oras' };
+        if (raw === 'stored') return { label: 'Stored', badge: 'badge-green', tone: 'In garaj' };
+        if (raw === 'broken') return { label: 'Broken', badge: 'badge-red', tone: 'Necesita repair' };
+        if (!raw) return { label: 'Necunoscut', badge: 'badge-gray', tone: 'Fara status' };
+        return { label: String(status), badge: 'badge-gray', tone: 'Status custom' };
+    }
+
+    function carsFromProfile(profile) {
+        return Array.isArray(profile?.masini) ? profile.masini : [];
+    }
+
+    function carColorLabel(color) {
+        return String(color || '').trim() || 'Necunoscuta';
+    }
+
+    function buildGarageCards(cars, limit = 0) {
+        const visibleCars = limit > 0 ? cars.slice(0, limit) : cars;
+        if (!visibleCars.length) {
+            return `<div class="empty-panel" style="grid-column:1 / -1;">Nu ai masini sincronizate inca.</div>`;
+        }
+
+        return visibleCars.map((car, index) => {
+            const status = getCarStatusMeta(car.status);
+            const carName = safeHtml(car.nume || `Masina ${index + 1}`);
+            const model = safeHtml(car.model || 'Model necunoscut');
+            return `
+                <div class="garage-card">
+                    <div class="garage-card-top">
+                        <div>
+                            <div class="garage-card-name">${carName}</div>
+                            <div class="garage-card-model">${model}</div>
+                        </div>
+                        <span class="badge ${status.badge}">${safeHtml(status.label)}</span>
+                    </div>
+                    <div class="garage-card-meta">
+                        <span class="badge badge-gray">${safeHtml(status.tone)}</span>
+                        <span class="badge badge-blue">${safeHtml(carColorLabel(car.culoare))}</span>
+                    </div>
+                    <div class="garage-specs">
+                        <div class="garage-spec">
+                            <div class="k">Kilometraj</div>
+                            <div class="v">${fmt(car.km || 0)} km</div>
+                        </div>
+                        <div class="garage-spec">
+                            <div class="k">Culoare</div>
+                            <div class="v">${safeHtml(carColorLabel(car.culoare))}</div>
+                        </div>
+                        <div class="garage-spec">
+                            <div class="k">Nume intern</div>
+                            <div class="v">${carName}</div>
+                        </div>
+                        <div class="garage-spec">
+                            <div class="k">Model joc</div>
+                            <div class="v">${model}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderProfileOverview(profile) {
+        const grid = document.getElementById('profile-overview-grid');
+        const garagePreview = document.getElementById('profile-garage-preview');
+        const propertyPreview = document.getElementById('profile-property-preview');
+        if (!grid || !garagePreview || !propertyPreview) return;
+
+        const cars = carsFromProfile(profile);
+        const slots = Math.max(Number(profile?.sloturi_garaj || 0), 0);
+        const availableSlots = Math.max(slots - cars.length, 0);
+        const ownedHouse = Number(profile?.casa_detinuta || 0);
+        const rentedHouse = Number(profile?.casa_inchiriata || 0);
+        const spawnPref = String(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
+
+        grid.innerHTML = `
+            <div class="overview-card">
+                <div class="overview-label">Garage Slots</div>
+                <div class="overview-value">${cars.length}/${slots || 0}</div>
+                <div class="overview-note">${availableSlots} sloturi libere in momentul asta.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Property Status</div>
+                <div class="overview-value">${ownedHouse > 0 ? `Casa #${ownedHouse}` : 'Fara casa'}</div>
+                <div class="overview-note">${rentedHouse > 0 ? `Ai si chirie activa la casa #${rentedHouse}.` : 'Momentan nu ai chirie activa.'}</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Spawn Preference</div>
+                <div class="overview-value">${safeHtml(spawnPref)}</div>
+                <div class="overview-note">Valoarea vine direct din sync-ul de joc.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Economy Snapshot</div>
+                <div class="overview-value">$${fmt((profile?.banii_cash || 0) + (profile?.banii_banca || 0))}</div>
+                <div class="overview-note">Cash + banca, ca sa vezi repede contul real.</div>
+            </div>
+        `;
+
+        garagePreview.innerHTML = buildGarageCards(cars, 2);
+        propertyPreview.innerHTML = `
+            <div class="property-card">
+                <h3>${ownedHouse > 0 ? `Casa #${ownedHouse}` : 'Nicio casa detinuta'}</h3>
+                <p>${ownedHouse > 0 ? 'Casa ta e sincronizata in profilul panelului si apare imediat in overview.' : 'Cand iti cumperi casa in joc, o afisam aici instant in panel.'}</p>
+                <div class="garage-card-meta">
+                    <span class="badge ${ownedHouse > 0 ? 'badge-green' : 'badge-gray'}">${ownedHouse > 0 ? 'Owned' : 'No property'}</span>
+                    <span class="badge badge-blue">Spawn: ${safeHtml(spawnPref)}</span>
+                </div>
+            </div>
+            <div class="property-card">
+                <h3>${rentedHouse > 0 ? `Chirie #${rentedHouse}` : 'Fara chirie activa'}</h3>
+                <p>${rentedHouse > 0 ? 'Ai o proprietate inchiriata activa. O afisam separat fata de casa detinuta.' : 'Daca inchiriezi o casa in joc, o vom afisa aici dupa sync-ul nou.'}</p>
+                <div class="garage-card-meta">
+                    <span class="badge ${rentedHouse > 0 ? 'badge-orange' : 'badge-gray'}">${rentedHouse > 0 ? 'Rented' : 'No rent'}</span>
+                    <span class="badge badge-gray">Slots: ${slots || 0}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderGaragePage(profile) {
+        const summary = document.getElementById('garage-summary');
+        const cardsRoot = document.getElementById('garage-cards');
+        const usageBar = document.getElementById('garage-usage-bar');
+        const usageText = document.getElementById('garage-usage-text');
+        if (!summary || !cardsRoot || !usageBar || !usageText) return;
+
+        const cars = carsFromProfile(profile);
+        const slots = Math.max(Number(profile?.sloturi_garaj || 0), 0);
+        const spawned = cars.filter((car) => String(car?.status || '').toLowerCase() === 'spawned').length;
+        const stored = cars.filter((car) => String(car?.status || '').toLowerCase() === 'stored').length;
+        const broken = cars.filter((car) => String(car?.status || '').toLowerCase() === 'broken').length;
+        const usagePct = slots > 0 ? Math.min(100, Math.round((cars.length / slots) * 100)) : 0;
+
+        summary.innerHTML = `
+            <div class="garage-mini-stat"><div class="top">Masini Detinute</div><div class="val">${cars.length}</div></div>
+            <div class="garage-mini-stat"><div class="top">Stored</div><div class="val">${stored}</div></div>
+            <div class="garage-mini-stat"><div class="top">Spawned</div><div class="val">${spawned}</div></div>
+            <div class="garage-mini-stat"><div class="top">Broken</div><div class="val">${broken}</div></div>
+        `;
+        usageBar.style.width = `${usagePct}%`;
+        usageText.textContent = `${cars.length} / ${slots || 0} sloturi ocupate`;
+        cardsRoot.innerHTML = buildGarageCards(cars);
+    }
+
+    function renderPropertiesPage(profile) {
+        const summary = document.getElementById('property-summary-grid');
+        const cardsRoot = document.getElementById('property-cards');
+        if (!summary || !cardsRoot) return;
+
+        const ownedHouse = Number(profile?.casa_detinuta || 0);
+        const rentedHouse = Number(profile?.casa_inchiriata || 0);
+        const spawnPref = String(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
+        const slots = Number(profile?.sloturi_garaj || 0);
+        const hasExtendedSync = ownedHouse > 0 || rentedHouse > 0 || spawnPref !== 'Spawn';
+
+        summary.innerHTML = `
+            <div class="overview-card">
+                <div class="overview-label">Casa Detinuta</div>
+                <div class="overview-value">${ownedHouse > 0 ? `#${ownedHouse}` : 'Nu'}</div>
+                <div class="overview-note">${ownedHouse > 0 ? 'Proprietatea ta principala.' : 'Nu apare nicio casa pe cont.'}</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Casa Inchiriata</div>
+                <div class="overview-value">${rentedHouse > 0 ? `#${rentedHouse}` : 'Nu'}</div>
+                <div class="overview-note">${rentedHouse > 0 ? 'Chiria activa sincronizata din joc.' : 'Fara chirie activa momentan.'}</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Spawn Preference</div>
+                <div class="overview-value">${safeHtml(spawnPref)}</div>
+                <div class="overview-note">Pe ce punct important vrei sa intri in joc.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Sloturi Garaj</div>
+                <div class="overview-value">${slots}</div>
+                <div class="overview-note">Le legam aici fiind parte din ecosistemul proprietatii.</div>
+            </div>
+        `;
+
+        cardsRoot.innerHTML = `
+            <div class="property-card">
+                <h3>${ownedHouse > 0 ? `Casa #${ownedHouse}` : 'Proprietar inactiv'}</h3>
+                <p>${ownedHouse > 0
+                    ? 'Panelul iti arata instant ce casa detii si iti lasa loc pentru viitoarele detalii de chirie, seif si chiriasi.'
+                    : 'Inca nu exista o casa detinuta pe cont. Dupa prima achizitie, cardul asta devine hub-ul tau de locuinta.'}</p>
+                <div class="garage-card-meta">
+                    <span class="badge ${ownedHouse > 0 ? 'badge-green' : 'badge-gray'}">${ownedHouse > 0 ? 'Owned house' : 'No owned house'}</span>
+                    <span class="badge badge-blue">Spawn: ${safeHtml(spawnPref)}</span>
+                </div>
+            </div>
+            <div class="property-card">
+                <h3>${rentedHouse > 0 ? `Chirie #${rentedHouse}` : 'Status chirie'}</h3>
+                <p>${rentedHouse > 0
+                    ? 'Ai o chirie activa. Aici putem extinde mai departe cu rent price, warnings si safe balance dupa urmatorul sync din joc.'
+                    : 'Nu ai chirie activa. Dupa sync-ul nou, panelul poate afisa si chiria separata de casa detinuta.'}</p>
+                <div class="garage-card-meta">
+                    <span class="badge ${rentedHouse > 0 ? 'badge-orange' : 'badge-gray'}">${rentedHouse > 0 ? 'Rented' : 'No active rent'}</span>
+                    <span class="badge badge-gray">${hasExtendedSync ? 'Live sync enabled' : 'Waiting for next sync'}</span>
+                </div>
+            </div>
+            <div class="property-card">
+                <h3>Ce urmeaza aici</h3>
+                <p>Structura e pregatita pentru rent price, safe balance, chiriasi si preferinta de spawn. Pentru astea am nevoie de sync-ul extins publicat din Rojo, exact cum am facut la factiuni live.</p>
+                <div class="garage-card-meta">
+                    <span class="badge badge-blue">Ready to extend</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function buildNotificationRows() {
+        const rows = [];
+        const apps = hubSnapshot?.my_applications || [];
+        const shop = hubSnapshot?.shop_history || [];
+        const leaderPending = hubSnapshot?.leader_pending_apps || [];
+
+        apps.forEach((app) => {
+            const status = String(app?.status || '').toLowerCase();
+            let tone = 'badge-gray';
+            let icon = 'fa-file-lines';
+            let title = `Aplicatie ${app?.faction || '-'}`;
+            let body = app?.feedback || app?.preview || app?.message || 'Aplicatia ta a fost actualizata.';
+
+            if (status === 'invited') {
+                tone = 'badge-green';
+                icon = 'fa-envelope-open-text';
+                title = `Invite in ${app?.faction || 'factiune'}`;
+                body = app?.feedback || 'Ai primit invitatie. Intra in Faction Hub si confirma.';
+            } else if (status === 'rejected') {
+                tone = 'badge-red';
+                icon = 'fa-circle-xmark';
+                title = `Respins la ${app?.faction || 'factiune'}`;
+            } else if (status === 'pending') {
+                tone = 'badge-orange';
+                icon = 'fa-hourglass-half';
+                title = `In review la ${app?.faction || 'factiune'}`;
+                body = 'Aplicatia ta este in continuare la leader review.';
+            } else if (status === 'joined') {
+                tone = 'badge-blue';
+                icon = 'fa-shield-heart';
+                title = `Ai intrat in ${app?.faction || 'factiune'}`;
+                body = 'Aplicatia ta a fost finalizata si ai intrat oficial.';
+            }
+
+            rows.push({
+                ts: Number(app?.responded_at || app?.reviewed_at || app?.created_at || 0),
+                tone,
+                icon,
+                label: (status || 'update').toUpperCase(),
+                title,
+                body,
+            });
+        });
+
+        shop.forEach((item) => {
+            rows.push({
+                ts: Number(item?.ts || 0),
+                tone: 'badge-green',
+                icon: 'fa-gem',
+                label: `${Number(item?.cost_pp || 0)} PP`,
+                title: `Cumparatura: ${item?.item_name || item?.item_id || 'Item'}`,
+                body: `Status: ${item?.status || 'done'}. Itemul a fost inregistrat in istoricul panelului.`,
+            });
+        });
+
+        if (leaderPending.length) {
+            rows.push({
+                ts: Date.now(),
+                tone: 'badge-orange',
+                icon: 'fa-user-shield',
+                label: 'LEADER',
+                title: `Ai ${leaderPending.length} aplicatii pending`,
+                body: 'Verifica Leader Tools. Exista aplicatii care asteapta review.',
+            });
+        }
+
+        return rows.sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0));
+    }
+
+    function renderNotificationsPage() {
+        const summary = document.getElementById('notification-summary-grid');
+        const feed = document.getElementById('notifications-feed');
+        if (!summary || !feed) return;
+
+        const rows = buildNotificationRows();
+        const invites = rows.filter((row) => row.title.startsWith('Invite')).length;
+        const pending = rows.filter((row) => row.label === 'PENDING' || row.label === 'LEADER').length;
+        const purchases = rows.filter((row) => row.icon === 'fa-gem').length;
+
+        summary.innerHTML = `
+            <div class="overview-card">
+                <div class="overview-label">Inbox Total</div>
+                <div class="overview-value">${rows.length}</div>
+                <div class="overview-note">Tot ce e relevant pentru contul tau.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Invite-uri</div>
+                <div class="overview-value">${invites}</div>
+                <div class="overview-note">Invitatii active sau recente.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Pending</div>
+                <div class="overview-value">${pending}</div>
+                <div class="overview-note">Aplicatii si remindere care cer atentie.</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">Cumparaturi</div>
+                <div class="overview-value">${purchases}</div>
+                <div class="overview-note">Ultimele tranzactii din PP Shop.</div>
+            </div>
+        `;
+
+        if (!rows.length) {
+            feed.innerHTML = `<div class="empty-panel">Momentan inbox-ul tau e gol. Cand apar invite-uri, raspunsuri sau cumparaturi, le vezi aici.</div>`;
+            return;
+        }
+
+        feed.innerHTML = rows.map((row) => `
+            <div class="notice-card">
+                <div class="notice-icon"><i class="fas ${safeHtml(row.icon)}"></i></div>
+                <div class="notice-copy">
+                    <div class="notice-meta">
+                        <span class="notice-title">${safeHtml(row.title)}</span>
+                        <span class="badge ${row.tone}">${safeHtml(row.label)}</span>
+                        <span class="notice-time">${fmtDate(row.ts)}</span>
+                    </div>
+                    <div class="notice-body">${safeHtml(row.body || '')}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
     function listenMyProfile(robloxName) {
         onValue(ref(db, 'users/' + robloxName), (snap) => {
             const d = snap.val();
             if (!d) return;
+            currentProfileData = d;
             const avatar = d.avatar_url || '';
             // Sidebar
             document.getElementById('sb-avatar').src = avatar;
@@ -797,15 +1270,10 @@
             const cars = Array.isArray(d.masini) ? d.masini : [];
             document.getElementById('p-cars').innerText = cars.length;
             document.getElementById('p-slots').innerText = d.sloturi_garaj || 2;
-            // Garage
-            const gb = document.getElementById('my-garage');
-            gb.innerHTML = cars.length ? cars.map(c => `
-                <tr>
-                    <td>${c.model || '—'}</td><td>${c.nume || '—'}</td>
-                    <td>${c.culoare || '—'}</td><td>${(c.km||0).toLocaleString()} km</td>
-                    <td><span class="badge ${c.status==='Stored'||c.status==='Spawned'?'badge-green':'badge-red'}">${c.status||'—'}</span></td>
-                </tr>`).join('')
-                : '<tr><td colspan="5" class="empty-msg">Nicio mașină în garaj.</td></tr>';
+            renderProfileOverview(d);
+            renderGaragePage(d);
+            renderPropertiesPage(d);
+            renderNotificationsPage();
             // Dashboard stats
             document.getElementById('ds-cash').innerText = '$' + fmt(d.banii_cash);
             document.getElementById('ds-bank').innerText = '$' + fmt(d.banii_banca);
@@ -1213,6 +1681,7 @@
         loadFactions();
         renderMyApplications(data.my_applications || []);
         renderApplyFactionOptions(data.open_factions || data.available_factions || [], data.game_factions || []);
+        renderNotificationsPage();
 
         const leaderTools = document.getElementById("leader-tools");
         if (data.is_leader) {
@@ -1241,6 +1710,7 @@
         document.getElementById("pp-balance").textContent = fmt(data.my_pp || 0);
         renderShopHistory(data.shop_history || []);
         renderShopItems(data.my_pp || 0);
+        renderNotificationsPage();
     }
 
     function renderShopHistory(rows) {
