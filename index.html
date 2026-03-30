@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
@@ -141,6 +141,13 @@
             transition: all 0.15s; border: 1px solid transparent;
         }
         .nav-item i { width: 18px; text-align: center; font-size: 14px; }
+        .nav-label { min-width: 0; }
+        .nav-badge {
+            margin-left: auto; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(0,255,136,0.14); color: #00ff88; font-size: 11px; font-weight: 900;
+            border: 1px solid rgba(0,255,136,0.22);
+        }
         .nav-item:hover { background: rgba(255,255,255,0.04); color: #e2e8f0; }
         .nav-item.active { background: rgba(0,255,136,0.1); color: #00ff88; border-color: rgba(0,255,136,0.2); }
         .sidebar-bottom { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
@@ -230,6 +237,9 @@
             background: linear-gradient(160deg, rgba(0,255,136,0.08), rgba(17,24,39,0.92) 45%);
             border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:16px;
         }
+        .garage-card.selectable { cursor:pointer; transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; }
+        .garage-card.selectable:hover { transform: translateY(-2px); border-color: rgba(56,189,248,0.3); box-shadow: 0 18px 34px rgba(2,6,23,0.22); }
+        .garage-card.selected { border-color: rgba(0,255,136,0.38); box-shadow: 0 0 0 1px rgba(0,255,136,0.16) inset; }
         .garage-card-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
         .garage-card-name { font-size:18px; font-weight:900; color:#fff; }
         .garage-card-model { margin-top:4px; color:#94a3b8; font-size:12px; }
@@ -238,6 +248,20 @@
         .garage-spec { background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:10px; }
         .garage-spec .k { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; }
         .garage-spec .v { color:#e2e8f0; font-size:14px; font-weight:800; margin-top:4px; }
+        .garage-focus-shell {
+            background: linear-gradient(145deg, rgba(0,255,136,0.12), rgba(56,189,248,0.08) 45%, rgba(15,23,42,0.94));
+            border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:22px; margin-bottom:18px;
+        }
+        .garage-focus-top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+        .garage-focus-title { font-size:26px; font-weight:900; color:#fff; }
+        .garage-focus-sub { margin-top:6px; color:#cbd5e1; font-size:13px; line-height:1.6; max-width:720px; }
+        .garage-focus-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-top:18px; }
+        .garage-focus-stat {
+            background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px;
+        }
+        .garage-focus-stat .k { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; }
+        .garage-focus-stat .v { color:#fff; font-size:18px; font-weight:900; margin-top:6px; }
+        .garage-action-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
         .progress-shell { height:10px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden; }
         .progress-bar { height:100%; border-radius:999px; background:linear-gradient(90deg, #00ff88, #38bdf8); }
         .property-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:18px; margin-top:6px; align-items:stretch; }
@@ -270,6 +294,14 @@
             cursor:not-allowed; opacity:0.5; transform:none;
         }
         .property-note-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+        .property-action-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+        .tenant-list { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+        .tenant-item {
+            display:flex; align-items:center; justify-content:space-between; gap:10px;
+            background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px 14px;
+        }
+        .tenant-item strong { color:#fff; font-size:14px; }
+        .tenant-item span { color:#94a3b8; font-size:12px; }
         .notification-stack { display:flex; flex-direction:column; gap:16px; margin-top:18px; }
         .notice-spotlight {
             background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(56,189,248,0.08));
@@ -350,6 +382,7 @@
             .stat-grid { grid-template-columns: 1fr 1fr; }
             .split-2 { grid-template-columns: 1fr; }
             .garage-specs { grid-template-columns: 1fr; }
+            .garage-focus-grid { grid-template-columns: 1fr 1fr; }
             .property-detail-grid { grid-template-columns: 1fr; }
             .pref-btn { width: 100%; }
         }
@@ -365,17 +398,17 @@
 <!-- OVERLAY VERIFICARE -->
 <div id="verify-overlay">
     <div class="verify-box">
-        <div class="verify-icon">⚠️</div>
+        <div class="verify-icon">âš ï¸</div>
         <div class="verify-title">Cont Neverificat</div>
         <div class="verify-sub">
-            Trebuie să confirmi că ești proprietarul contului <strong id="verify-name" style="color:#00ff88"></strong>.<br>
-            Intră pe server și scrie în chat:
+            Trebuie sÄƒ confirmi cÄƒ eÈ™ti proprietarul contului <strong id="verify-name" style="color:#00ff88"></strong>.<br>
+            IntrÄƒ pe server È™i scrie Ã®n chat:
         </div>
         <div class="code-display" id="verification-code" title="Click pentru copiere">Generare cod...</div>
-        <div class="verify-note">Ecranul dispare automat după verificare.</div>
+        <div class="verify-note">Ecranul dispare automat dupÄƒ verificare.</div>
         <div class="verify-actions">
-            <button class="v-btn primary" onclick="activeazaVerificarea()">🔄 Cod Nou</button>
-            <button class="v-btn secondary" onclick="logoutUser()">Ieșire</button>
+            <button class="v-btn primary" onclick="activeazaVerificarea()">ðŸ”„ Cod Nou</button>
+            <button class="v-btn secondary" onclick="logoutUser()">IeÈ™ire</button>
         </div>
     </div>
 </div>
@@ -392,24 +425,24 @@
     <div class="auth-card" id="login-card">
         <div class="auth-logo">SEVID<span>RP</span></div>
         <div class="auth-sub">Panelul oficial al serverului</div>
-        <h2>🔐 Autentificare</h2>
+        <h2>ðŸ” Autentificare</h2>
         <div class="field">
             <label>Email</label>
             <input type="email" id="login-email" placeholder="email@exemplu.com" autocomplete="email">
         </div>
         <div class="field">
-            <label>Parolă</label>
-            <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+            <label>ParolÄƒ</label>
+            <input type="password" id="login-pass" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autocomplete="current-password">
         </div>
-        <button class="auth-btn" onclick="loginUser()">Intră în cont</button>
-        <div class="auth-toggle">Nu ai cont? <a onclick="showCard('reg-card')">Înregistrează-te</a></div>
+        <button class="auth-btn" onclick="loginUser()">IntrÄƒ Ã®n cont</button>
+        <div class="auth-toggle">Nu ai cont? <a onclick="showCard('reg-card')">ÃŽnregistreazÄƒ-te</a></div>
     </div>
 
     <!-- REGISTER FORM -->
     <div class="auth-card" id="reg-card" style="display:none">
         <div class="auth-logo">SEVID<span>RP</span></div>
-        <div class="auth-sub">Creează-ți contul gratuit</div>
-        <h2>📝 Înregistrare</h2>
+        <div class="auth-sub">CreeazÄƒ-È›i contul gratuit</div>
+        <h2>ðŸ“ ÃŽnregistrare</h2>
         <div class="field">
             <label>Nume Roblox (exact)</label>
             <input type="text" id="reg-roblox" placeholder="ex: sebyk" autocomplete="off">
@@ -419,11 +452,11 @@
             <input type="email" id="reg-email" placeholder="email@exemplu.com" autocomplete="email">
         </div>
         <div class="field">
-            <label>Parolă</label>
+            <label>ParolÄƒ</label>
             <input type="password" id="reg-pass" placeholder="minim 6 caractere" autocomplete="new-password">
         </div>
-        <button class="auth-btn" onclick="registerUser()">Creează Cont</button>
-        <div class="auth-toggle">Ai deja cont? <a onclick="showCard('login-card')">Loghează-te</a></div>
+        <button class="auth-btn" onclick="registerUser()">CreeazÄƒ Cont</button>
+        <div class="auth-toggle">Ai deja cont? <a onclick="showCard('login-card')">LogheazÄƒ-te</a></div>
     </div>
 </div>
 
@@ -444,11 +477,11 @@
             <div class="nav-item" data-page="profile" onclick="goPage('profile')"><i class="fas fa-user"></i> Profilul Meu</div>
             <div class="nav-item" data-page="garage" onclick="goPage('garage')"><i class="fas fa-car"></i> Garage</div>
             <div class="nav-item" data-page="properties" onclick="goPage('properties')"><i class="fas fa-house"></i> Properties</div>
-            <div class="nav-item" data-page="notifications" onclick="goPage('notifications')"><i class="fas fa-bell"></i> Notifications</div>
-            <div class="nav-item" data-page="players" onclick="goPage('players')"><i class="fas fa-users"></i> Jucători</div>
+            <div class="nav-item" data-page="notifications" onclick="goPage('notifications')"><i class="fas fa-bell"></i> Notifications<span id="nav-notifications-badge" class="nav-badge" style="display:none">0</span></div>
+            <div class="nav-item" data-page="players" onclick="goPage('players')"><i class="fas fa-users"></i> JucÄƒtori</div>
             <div class="nav-item" data-page="factions" onclick="goPage('factions')"><i class="fas fa-shield-alt"></i> Faction Hub</div>
             <div class="nav-item" data-page="ppshop" onclick="goPage('ppshop')"><i class="fas fa-gem"></i> PP Shop</div>
-            <div class="nav-item" data-page="reports" onclick="goPage('reports')"><i class="fas fa-flag"></i> Reclamații</div>
+            <div class="nav-item" data-page="reports" onclick="goPage('reports')"><i class="fas fa-flag"></i> ReclamaÈ›ii</div>
         </nav>
         <div class="sidebar-bottom">
             <button class="logout-btn" onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Deconectare</button>
@@ -465,18 +498,18 @@
                 <p>Bine ai venit pe panelul SEVID RP!</p>
             </div>
             <div class="stat-grid" id="dash-stats">
-                <div class="stat-card"><div class="stat-label">Jucători Înregistrați</div><div class="stat-val green" id="ds-players">—</div></div>
-                <div class="stat-card"><div class="stat-label">Facțiuni Active</div><div class="stat-val blue" id="ds-factions">—</div></div>
-                <div class="stat-card"><div class="stat-label">Banii Tăi Cash</div><div class="stat-val" id="ds-cash">—</div></div>
-                <div class="stat-card"><div class="stat-label">Banii la Bancă</div><div class="stat-val" id="ds-bank">—</div></div>
-                <div class="stat-card"><div class="stat-label">Premium Points</div><div class="stat-val green" id="ds-pp">—</div></div>
+                <div class="stat-card"><div class="stat-label">JucÄƒtori ÃŽnregistraÈ›i</div><div class="stat-val green" id="ds-players">â€”</div></div>
+                <div class="stat-card"><div class="stat-label">FacÈ›iuni Active</div><div class="stat-val blue" id="ds-factions">â€”</div></div>
+                <div class="stat-card"><div class="stat-label">Banii TÄƒi Cash</div><div class="stat-val" id="ds-cash">â€”</div></div>
+                <div class="stat-card"><div class="stat-label">Banii la BancÄƒ</div><div class="stat-val" id="ds-bank">â€”</div></div>
+                <div class="stat-card"><div class="stat-label">Premium Points</div><div class="stat-val green" id="ds-pp">â€”</div></div>
             </div>
             <div class="card">
-                <div class="card-title"><i class="fas fa-trophy"></i> Top Bogați</div>
+                <div class="card-title"><i class="fas fa-trophy"></i> Top BogaÈ›i</div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>#</th><th>Jucător</th><th>Facțiune</th><th>Total</th></tr></thead>
-                        <tbody id="top-rich-body"><tr><td colspan="4" class="empty-msg">Se incarcă...</td></tr></tbody>
+                        <thead><tr><th>#</th><th>JucÄƒtor</th><th>FacÈ›iune</th><th>Total</th></tr></thead>
+                        <tbody id="top-rich-body"><tr><td colspan="4" class="empty-msg">Se incarcÄƒ...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -492,7 +525,7 @@
                 <div class="profile-hero">
                     <img id="prof-avatar" class="profile-avatar-big" src="" alt="avatar">
                     <div class="profile-info">
-                        <h2 id="prof-name">—</h2>
+                        <h2 id="prof-name">â€”</h2>
                         <div class="tag">
                             <span class="badge badge-blue" id="prof-faction">Civil</span>
                             <span class="badge badge-green" id="prof-rank-badge">Rank 0</span>
@@ -502,13 +535,13 @@
                 </div>
                 <div class="kv-grid">
                     <div class="kv-item"><div class="k">Cash</div><div class="v" id="p-cash">$0</div></div>
-                    <div class="kv-item"><div class="k">Bancă</div><div class="v" id="p-bank">$0</div></div>
+                    <div class="kv-item"><div class="k">BancÄƒ</div><div class="v" id="p-bank">$0</div></div>
                     <div class="kv-item"><div class="k">Ore Jucate</div><div class="v" id="p-hours">0h</div></div>
                     <div class="kv-item"><div class="k">RP Points</div><div class="v" id="p-rp">0</div></div>
                     <div class="kv-item"><div class="k">Premium Points</div><div class="v" id="p-pp">0</div></div>
-                    <div class="kv-item"><div class="k">Casă ID</div><div class="v" id="p-house">—</div></div>
-                    <div class="kv-item"><div class="k">Job Curent</div><div class="v" id="p-job">—</div></div>
-                    <div class="kv-item"><div class="k">Mașini</div><div class="v" id="p-cars">0</div></div>
+                    <div class="kv-item"><div class="k">CasÄƒ ID</div><div class="v" id="p-house">â€”</div></div>
+                    <div class="kv-item"><div class="k">Job Curent</div><div class="v" id="p-job">â€”</div></div>
+                    <div class="kv-item"><div class="k">MaÈ™ini</div><div class="v" id="p-cars">0</div></div>
                     <div class="kv-item"><div class="k">Slot Garaj</div><div class="v" id="p-slots">2</div></div>
                 </div>
             </div>
@@ -553,11 +586,12 @@
                 <p>Garajul tau complet, cu statusuri, sloturi si detalii mai clare.</p>
             </div>
             <div class="garage-summary" id="garage-summary"></div>
+            <div class="garage-focus-shell" id="garage-focus-card"></div>
             <div class="card">
                 <div class="section-row">
                     <div>
                         <div class="card-title" style="margin-bottom:6px"><i class="fas fa-warehouse"></i> Masinile Tale</div>
-                        <div class="section-sub">Aici mutam partea buna, nu doar tabelul sec din profil.</div>
+                        <div class="section-sub">Selecteaza o masina si vezi dosarul ei complet mai sus.</div>
                     </div>
                     <div style="min-width:220px;">
                         <div class="section-sub" style="margin-bottom:6px;">Ocupare sloturi</div>
@@ -597,18 +631,18 @@
 <!-- JUCATORI -->
         <div class="page" id="page-players">
             <div class="page-header">
-                <h1>Jucători</h1>
-                <p>Caută orice jucător de pe server</p>
+                <h1>JucÄƒtori</h1>
+                <p>CautÄƒ orice jucÄƒtor de pe server</p>
             </div>
             <div class="card">
                 <div class="search-bar">
-                    <input type="text" id="players-q" placeholder="Caută după nume Roblox...">
-                    <button class="search-btn" onclick="searchPlayers()"><i class="fas fa-search"></i> Caută</button>
+                    <input type="text" id="players-q" placeholder="CautÄƒ dupÄƒ nume Roblox...">
+                    <button class="search-btn" onclick="searchPlayers()"><i class="fas fa-search"></i> CautÄƒ</button>
                 </div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Jucător</th><th>Facțiune</th><th>Rank</th><th>Level</th><th>Last Online</th></tr></thead>
-                        <tbody id="players-body"><tr><td colspan="5" class="empty-msg">Scrie un nume pentru a căuta.</td></tr></tbody>
+                        <thead><tr><th>JucÄƒtor</th><th>FacÈ›iune</th><th>Rank</th><th>Level</th><th>Last Online</th></tr></thead>
+                        <tbody id="players-body"><tr><td colspan="5" class="empty-msg">Scrie un nume pentru a cÄƒuta.</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -618,7 +652,7 @@
                 <div class="profile-hero">
                     <img id="pd-avatar" class="profile-avatar-big" src="" alt="">
                     <div class="profile-info">
-                        <h2 id="pd-rp-name">—</h2>
+                        <h2 id="pd-rp-name">â€”</h2>
                         <div class="tag">
                             <span class="badge badge-blue" id="pd-faction">Civil</span>
                             <span class="badge badge-green" id="pd-rank">Rank 0</span>
@@ -628,11 +662,11 @@
                 </div>
                 <div class="kv-grid">
                     <div class="kv-item"><div class="k">Cash</div><div class="v" id="pd-cash">$0</div></div>
-                    <div class="kv-item"><div class="k">Bancă</div><div class="v" id="pd-bank">$0</div></div>
+                    <div class="kv-item"><div class="k">BancÄƒ</div><div class="v" id="pd-bank">$0</div></div>
                     <div class="kv-item"><div class="k">Ore Jucate</div><div class="v" id="pd-hours">0h</div></div>
                     <div class="kv-item"><div class="k">RP Points</div><div class="v" id="pd-rp">0</div></div>
-                    <div class="kv-item"><div class="k">Mașini</div><div class="v" id="pd-cars">0</div></div>
-                    <div class="kv-item"><div class="k">Last Online</div><div class="v" id="pd-seen">—</div></div>
+                    <div class="kv-item"><div class="k">MaÈ™ini</div><div class="v" id="pd-cars">0</div></div>
+                    <div class="kv-item"><div class="k">Last Online</div><div class="v" id="pd-seen">â€”</div></div>
                 </div>
             </div>
         </div>
@@ -644,22 +678,22 @@
                 <p>Aplicatii, membri, leader tools si management de factiune</p>
             </div>
             <div class="card">
-                <div class="card-title"><i class="fas fa-layer-group"></i> Distribuție Jucători</div>
+                <div class="card-title"><i class="fas fa-layer-group"></i> DistribuÈ›ie JucÄƒtori</div>
                 <div class="faction-cards" id="faction-overview">
-                    <div class="empty-msg">Se incarcă...</div>
+                    <div class="empty-msg">Se incarcÄƒ...</div>
                 </div>
             </div>
             <!-- Members -->
             <div class="card" id="faction-detail" style="display:none">
                 <div class="card-title"><i class="fas fa-users"></i> Membri: <span id="fd-name" style="color:#00ff88"></span></div>
                 <div class="search-bar">
-                    <input id="faction-member-q" type="text" placeholder="Filtrează după nume...">
+                    <input id="faction-member-q" type="text" placeholder="FiltreazÄƒ dupÄƒ nume...">
                     <button class="search-btn" onclick="filterFactionMembers()"><i class="fas fa-filter"></i> Filtrare</button>
                 </div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Jucător</th><th>Rank</th><th>Level</th><th>Cash</th><th>Last Online</th></tr></thead>
-                        <tbody id="faction-members-body"><tr><td colspan="5" class="empty-msg">Selectează o facțiune.</td></tr></tbody>
+                        <thead><tr><th>JucÄƒtor</th><th>Rank</th><th>Level</th><th>Cash</th><th>Last Online</th></tr></thead>
+                        <tbody id="faction-members-body"><tr><td colspan="5" class="empty-msg">SelecteazÄƒ o facÈ›iune.</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -771,13 +805,13 @@
         <!-- RECLAMATII -->
         <div class="page" id="page-reports">
             <div class="page-header">
-                <h1>Reclamații</h1>
-                <p>Trimite o reclamație administratorilor</p>
+                <h1>ReclamaÈ›ii</h1>
+                <p>Trimite o reclamaÈ›ie administratorilor</p>
             </div>
             <div class="card">
-                <div class="card-title"><i class="fas fa-flag"></i> Reclamație Nouă</div>
+                <div class="card-title"><i class="fas fa-flag"></i> ReclamaÈ›ie NouÄƒ</div>
                 <div class="field" style="margin-bottom:14px">
-                    <label>Jucătorul reclamat</label>
+                    <label>JucÄƒtorul reclamat</label>
                     <input type="text" id="rep-target" placeholder="Nume exact Roblox">
                 </div>
                 <div class="field" style="margin-bottom:14px">
@@ -788,7 +822,7 @@
                     <label>Descriere</label>
                     <textarea id="rep-desc" placeholder="Descrie ce s-a intamplat..." style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e2e8f0;font-size:13px;outline:none;resize:vertical;min-height:100px;font-family:inherit"></textarea>
                 </div>
-                <button class="search-btn" style="width:100%;padding:14px" onclick="sendReport()"><i class="fas fa-paper-plane"></i> Trimite Reclamație</button>
+                <button class="search-btn" style="width:100%;padding:14px" onclick="sendReport()"><i class="fas fa-paper-plane"></i> Trimite ReclamaÈ›ie</button>
                 <div id="rep-status" style="margin-top:12px;display:none"></div>
             </div>
         </div>
@@ -824,6 +858,7 @@
     let leaderAppMap = {};
     let factionHubInterval = null;
     let currentProfileData = null;
+    let selectedGarageCarIndex = 0;
 
     const SHOP_ITEMS = [
         { id: "cash_10k", name: "$10,000 Cash", cost: 10, desc: "Boost rapid pentru inceput.", kind: "cash", amount: 10000 },
@@ -967,7 +1002,13 @@
         return Number(profile?.casa_detinuta || 0) > 0 || Number(profile?.casa_inchiriata || 0) > 0;
     }
 
-    function buildGarageCards(cars, limit = 0) {
+    function tenantNamesFromProfile(profile) {
+        return (Array.isArray(profile?.casa_detinuta_nume_chiriasi) ? profile.casa_detinuta_nume_chiriasi : [])
+            .map((name) => String(name || '').trim())
+            .filter(Boolean);
+    }
+
+    function buildGarageCards(cars, limit = 0, interactive = false) {
         const visibleCars = limit > 0 ? cars.slice(0, limit) : cars;
         if (!visibleCars.length) {
             return `<div class="empty-panel" style="grid-column:1 / -1;">Nu ai masini sincronizate inca.</div>`;
@@ -977,8 +1018,9 @@
             const status = getCarStatusMeta(car.status);
             const carName = safeHtml(car.nume || `Masina ${index + 1}`);
             const model = safeHtml(car.model || 'Model necunoscut');
+            const isSelected = interactive && index === selectedGarageCarIndex;
             return `
-                <div class="garage-card">
+                <div class="garage-card ${interactive ? 'selectable' : ''} ${isSelected ? 'selected' : ''}" ${interactive ? `onclick="selectGarageCar(${index})"` : ''}>
                     <div class="garage-card-top">
                         <div>
                             <div class="garage-card-name">${carName}</div>
@@ -1008,9 +1050,70 @@
                             <div class="v">${model}</div>
                         </div>
                     </div>
+                    <div class="garage-action-row">
+                        ${interactive
+                            ? `<span class="badge ${isSelected ? 'badge-green' : 'badge-gray'}">${isSelected ? 'Selectata' : 'Apasa pentru dosar'}</span>`
+                            : `<button class="tiny-btn" onclick="goPage('garage')">Deschide Garage</button>`}
+                    </div>
                 </div>
             `;
         }).join('');
+    }
+
+    function renderGarageFocus(profile, cars) {
+        const root = document.getElementById('garage-focus-card');
+        if (!root) return;
+        if (!cars.length) {
+            root.innerHTML = `<div class="empty-panel">Cand ai mai multe masini, aici apare dosarul complet pentru masina selectata.</div>`;
+            return;
+        }
+
+        if (selectedGarageCarIndex >= cars.length) {
+            selectedGarageCarIndex = 0;
+        }
+
+        const car = cars[selectedGarageCarIndex] || cars[0];
+        const status = getCarStatusMeta(car?.status);
+        const totalKm = cars.reduce((sum, row) => sum + Number(row?.km || 0), 0);
+        const carKm = Number(car?.km || 0);
+        const fleetShare = totalKm > 0 ? Math.round((carKm / totalKm) * 100) : 0;
+        const focusName = safeHtml(car?.nume || `Masina ${selectedGarageCarIndex + 1}`);
+        const focusModel = safeHtml(car?.model || 'Model necunoscut');
+        const houseLabel = Number(profile?.casa_detinuta || 0) > 0
+            ? `Casa #${Number(profile?.casa_detinuta || 0)}`
+            : Number(profile?.casa_inchiriata || 0) > 0
+                ? `Chirie #${Number(profile?.casa_inchiriata || 0)}`
+                : 'Fara property link';
+        const note = status.label === 'Broken'
+            ? 'Masina asta are nevoie de repair in joc daca vrei sa o readuci in circuit.'
+            : status.label === 'Spawned'
+                ? 'E deja scoasa in oras, deci e piesa activa din fleet-ul tau.'
+                : 'E pregatita in garaj si asteapta sa o scoti cand ai nevoie.';
+
+        root.innerHTML = `
+            <div class="garage-focus-top">
+                <div>
+                    <div class="garage-focus-title">${focusName}</div>
+                    <div class="garage-focus-sub">${focusModel} | ${note}</div>
+                    <div class="garage-card-meta" style="margin-top:14px;">
+                        <span class="badge ${status.badge}">${safeHtml(status.label)}</span>
+                        <span class="badge badge-blue">${safeHtml(carColorLabel(car?.culoare))}</span>
+                        <span class="badge badge-gray">Slot ${selectedGarageCarIndex + 1}</span>
+                        <span class="badge badge-gray">${safeHtml(houseLabel)}</span>
+                    </div>
+                </div>
+                <div class="garage-action-row">
+                    <button class="tiny-btn" onclick="goPage('profile')">Vezi in Profil</button>
+                    <button class="tiny-btn" onclick="goPage('properties')">Legatura cu Properties</button>
+                </div>
+            </div>
+            <div class="garage-focus-grid">
+                <div class="garage-focus-stat"><div class="k">Kilometraj</div><div class="v">${fmt(carKm)} km</div></div>
+                <div class="garage-focus-stat"><div class="k">Cota din fleet</div><div class="v">${fleetShare}%</div></div>
+                <div class="garage-focus-stat"><div class="k">Status live</div><div class="v">${safeHtml(status.tone)}</div></div>
+                <div class="garage-focus-stat"><div class="k">Culoare</div><div class="v">${safeHtml(carColorLabel(car?.culoare))}</div></div>
+            </div>
+        `;
     }
 
     function renderProfileOverview(profile) {
@@ -1111,7 +1214,8 @@
         `;
         usageBar.style.width = `${usagePct}%`;
         usageText.textContent = `${cars.length} / ${slots || 0} sloturi ocupate`;
-        cardsRoot.innerHTML = buildGarageCards(cars);
+        renderGarageFocus(profile, cars);
+        cardsRoot.innerHTML = buildGarageCards(cars, 0, true);
     }
 
     function renderPropertiesPage(profile) {
@@ -1132,6 +1236,7 @@
         const rentedOwner = String(profile?.casa_inchiriata_owner || '').trim();
         const hasExtendedSync = ownedHouse > 0 || rentedHouse > 0 || spawnPref !== 'Spawn';
         const houseAccess = hasHouseAccess(profile);
+        const tenantNames = tenantNamesFromProfile(profile);
         const houseSpawnLabel = ownedHouse > 0
             ? `Casa #${ownedHouse}`
             : rentedHouse > 0
@@ -1212,6 +1317,46 @@
                 <div id="property-spawn-status" class="status-line"></div>
             </div>
             <div class="property-card">
+                <h3>Rental Control</h3>
+                <p>${ownedHouse > 0
+                    ? `Controlezi chiria direct din panel. Poti porni/opri chiria, modifica pretul si curata lista de chiriasi fara sa te plimbi prin comenzi in joc.`
+                    : 'Cardul asta se activeaza dupa ce detii o casa.'}</p>
+                <div class="property-detail-grid">
+                    <div class="property-detail">
+                        <div class="k">Rentable</div>
+                        <div class="v">${ownedRentable ? 'ON' : 'OFF'}</div>
+                    </div>
+                    <div class="property-detail">
+                        <div class="k">Pret chirie</div>
+                        <div class="v">$${fmt(ownedRentPrice)}</div>
+                    </div>
+                </div>
+                <div class="property-action-row">
+                    <button class="tiny-btn" onclick="togglePropertyRentable()" ${ownedHouse > 0 ? '' : 'disabled'}>${ownedRentable ? 'Opreste chiria' : 'Porneste chiria'}</button>
+                    <button class="tiny-btn" onclick="setPropertyRentPrice()" ${ownedHouse > 0 ? '' : 'disabled'}>Schimba pret</button>
+                    <button class="tiny-btn danger" onclick="evictAllTenants()" ${(ownedHouse > 0 && ownedTenants > 0) ? '' : 'disabled'}>Evacueaza tot</button>
+                </div>
+                <div id="property-rent-status" class="status-line"></div>
+            </div>
+            <div class="property-card">
+                <h3>Tenant Roster</h3>
+                <p>${ownedHouse > 0
+                    ? `Lista chiriasilor pe care ii vezi in panel. Cand sincronizarea de joc merge, aici apar numele, nu doar count-ul.`
+                    : 'Cand devii proprietar, aici vezi cine sta in casa ta.'}</p>
+                ${tenantNames.length ? `
+                    <div class="tenant-list">
+                        ${tenantNames.map((name, idx) => `
+                            <div class="tenant-item">
+                                <strong>${safeHtml(name)}</strong>
+                                <span>Chirias #${idx + 1}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="empty-panel" style="margin-top:16px;">${ownedHouse > 0 ? 'Momentan nu ai chiriasi activi.' : 'Nicio casa detinuta pe cont.'}</div>
+                `}
+            </div>
+            <div class="property-card">
                 <h3>Property Ecosystem</h3>
                 <p>Sloturi garaj: ${slots}. Aici vezi lantul complet al locuintei: seif, chirie, spawn, chiriasi si cat de bine e conectata proprietatea la restul panelului.</p>
                 <div class="property-detail-grid">
@@ -1236,11 +1381,54 @@
         `;
     }
 
+    function updateSidebarNotificationBadge(rows) {
+        const el = document.getElementById('nav-notifications-badge');
+        if (!el) return;
+        const count = Array.isArray(rows) ? rows.length : 0;
+        if (!count) {
+            el.style.display = 'none';
+            el.textContent = '0';
+            return;
+        }
+        el.style.display = 'inline-flex';
+        el.textContent = count > 99 ? '99+' : String(count);
+    }
+
     function buildNotificationRows() {
         const rows = [];
         const apps = hubSnapshot?.my_applications || [];
         const shop = hubSnapshot?.shop_history || [];
         const leaderPending = hubSnapshot?.leader_pending_apps || [];
+        const profile = currentProfileData || {};
+        const ownedHouse = Number(profile?.casa_detinuta || 0);
+        const rentedHouse = Number(profile?.casa_inchiriata || 0);
+        const ownedTenants = Number(profile?.casa_detinuta_chiriasi || 0);
+        const ownedRentable = !!profile?.casa_detinuta_chirie_activata;
+        const spawnPref = normalizeSpawnPreference(profile?.spawn_preferat || profile?.spawn_actual || 'Spawn');
+
+        if (ownedHouse > 0) {
+            rows.push({
+                ts: Number(profile?.spawn_updated_at || Date.now()),
+                tone: 'badge-blue',
+                icon: 'fa-house',
+                label: 'HOUSE',
+                title: `Property update pentru Casa #${ownedHouse}`,
+                body: ownedTenants > 0
+                    ? `Ai ${ownedTenants} chiriasi activi, chiria este ${ownedRentable ? 'pornita' : 'oprita'}, iar spawn-ul e pe ${spawnPref}.`
+                    : `Casa ta este conectata la panel, chiria este ${ownedRentable ? 'pornita' : 'oprita'}, iar spawn-ul e pe ${spawnPref}.`,
+                category: 'Property',
+            });
+        } else if (rentedHouse > 0) {
+            rows.push({
+                ts: Date.now(),
+                tone: 'badge-blue',
+                icon: 'fa-key',
+                label: 'RENT',
+                title: `Chirie activa la Casa #${rentedHouse}`,
+                body: `Panelul stie ca ai chirie activa si iti pastreaza spawn-ul pe ${spawnPref}.`,
+                category: 'Property',
+            });
+        }
 
         apps.forEach((app) => {
             const status = String(app?.status || '').toLowerCase();
@@ -1314,6 +1502,7 @@
         if (!summary || !feed) return;
 
         const rows = buildNotificationRows();
+        updateSidebarNotificationBadge(rows);
         const invites = rows.filter((row) => row.title.startsWith('Invite')).length;
         const pending = rows.filter((row) => row.label === 'PENDING' || row.label === 'LEADER').length;
         const purchases = rows.filter((row) => row.icon === 'fa-gem').length;
@@ -1389,15 +1578,15 @@
             document.getElementById('prof-rank-badge').innerText = 'Rank ' + (d.rank || 0);
             const adminLv = parseInt(d.admin||0);
             const lvBadge = document.getElementById('prof-level-badge');
-            if (adminLv > 0) { lvBadge.textContent = '⚡ STAFF'; lvBadge.className = 'badge badge-red'; }
+            if (adminLv > 0) { lvBadge.textContent = 'âš¡ STAFF'; lvBadge.className = 'badge badge-red'; }
             else { lvBadge.textContent = 'Lv. ' + (d.level || 1); lvBadge.className = 'badge badge-orange'; }
             document.getElementById('p-cash').innerText = '$' + fmt(d.banii_cash);
             document.getElementById('p-bank').innerText = '$' + fmt(d.banii_banca);
             document.getElementById('p-hours').innerText = (d.ore_jucate || 0) + 'h';
             document.getElementById('p-rp').innerText = fmt(d.rp);
             document.getElementById('p-pp').innerText = fmt(d.premium_points || 0);
-            document.getElementById('p-house').innerText = d.casa_detinuta > 0 ? 'ID ' + d.casa_detinuta : '—';
-            document.getElementById('p-job').innerText = d.job_curent || '—';
+            document.getElementById('p-house').innerText = d.casa_detinuta > 0 ? 'ID ' + d.casa_detinuta : 'â€”';
+            document.getElementById('p-job').innerText = d.job_curent || 'â€”';
             const cars = Array.isArray(d.masini) ? d.masini : [];
             document.getElementById('p-cars').innerText = cars.length;
             document.getElementById('p-slots').innerText = d.sloturi_garaj || 2;
@@ -1430,7 +1619,7 @@
                 <td><strong>${p.name}</strong></td>
                 <td><span class="badge badge-blue">${p.faction}</span></td>
                 <td style="color:#00ff88;font-weight:700">$${fmt(p.total)}</td>
-            </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">Nu există date.</td></tr>';
+            </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">Nu existÄƒ date.</td></tr>';
     }
 
     // ---- PLAYERS ----
@@ -1439,18 +1628,18 @@
         const body = document.getElementById('players-body');
         const detail = document.getElementById('player-detail');
         detail.style.display = 'none';
-        if (!q) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Scrie un nume pentru a căuta.</td></tr>'; return; }
+        if (!q) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Scrie un nume pentru a cÄƒuta.</td></tr>'; return; }
         const results = Object.entries(allUsers)
             .filter(([name, d]) => name.toLowerCase().includes(q) || (d.nume_rp||'').toLowerCase().includes(q))
             .slice(0, 30);
-        if (!results.length) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Niciun jucător găsit.</td></tr>'; return; }
+        if (!results.length) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Niciun jucÄƒtor gÄƒsit.</td></tr>'; return; }
         body.innerHTML = results.map(([name, d]) => `
             <tr class="clickable-row" onclick="showPlayerDetail('${name}')">
                 <td><strong>${name}</strong>${d.nume_rp&&d.nume_rp!==name?' <span style="color:#64748b;font-size:11px;">(${d.nume_rp})</span>':''}</td>
                 <td><span class="badge badge-blue">${d.factiune||'Civil'}</span></td>
                 <td>${d.rank||0}</td>
                 <td>${d.level||1}</td>
-                <td style="color:#64748b">${d.last_online||'—'}</td>
+                <td style="color:#64748b">${d.last_online||'â€”'}</td>
             </tr>`).join('');
     }
 
@@ -1465,7 +1654,7 @@
         document.getElementById('pd-rank').innerText = 'Rank ' + (d.rank||0);
         const pdAdm = parseInt(d.admin||0);
         const pdLvEl = document.getElementById('pd-level');
-        if (pdAdm > 0) { pdLvEl.textContent = '⚡ STAFF'; pdLvEl.className = 'badge badge-red'; }
+        if (pdAdm > 0) { pdLvEl.textContent = 'âš¡ STAFF'; pdLvEl.className = 'badge badge-red'; }
         else { pdLvEl.textContent = 'Lv. ' + (d.level||1); pdLvEl.className = 'badge badge-orange'; }
         document.getElementById('pd-cash').innerText = '$' + fmt(d.banii_cash);
         document.getElementById('pd-bank').innerText = '$' + fmt(d.banii_banca);
@@ -1473,7 +1662,7 @@
         document.getElementById('pd-rp').innerText = fmt(d.rp);
         const cars = Array.isArray(d.masini) ? d.masini : [];
         document.getElementById('pd-cars').innerText = cars.length;
-        document.getElementById('pd-seen').innerText = d.last_online || '—';
+        document.getElementById('pd-seen').innerText = d.last_online || 'â€”';
         document.getElementById('player-detail').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -1543,13 +1732,13 @@
         const body = document.getElementById('faction-members-body');
         body.innerHTML = list.length ? list.map(([name, d]) => {
             const isStaff = parseInt(d.admin||0) > 0;
-            const lvCell = isStaff ? '<span class="badge badge-red">⚡ STAFF</span>' : (d.level||1);
+            const lvCell = isStaff ? '<span class="badge badge-red">âš¡ STAFF</span>' : (d.level||1);
             return `<tr>
                 <td><strong>${name}</strong></td>
                 <td>${d.rank||0}</td>
                 <td>${lvCell}</td>
                 <td>$${fmt(d.banii_cash)}</td>
-                <td style="color:#64748b">${d.last_online||'—'}</td>
+                <td style="color:#64748b">${d.last_online||'â€”'}</td>
             </tr>`;
         }).join('') : '<tr><td colspan="5" class="empty-msg">Niciun membru.</td></tr>';
     }
@@ -2063,6 +2252,11 @@
         await refreshFactionHub();
     };
 
+    window.selectGarageCar = function(index) {
+        selectedGarageCarIndex = Math.max(0, Number(index || 0));
+        renderGaragePage(currentProfileData);
+    };
+
     window.setSpawnPreference = async function(preference) {
         if (!currentProfileData) {
             setStatusLine("property-spawn-status", false, "Profilul nu este incarcat inca.");
@@ -2092,26 +2286,101 @@
         setStatusLine("property-spawn-status", true, data.msg || `Spawn preference setat pe ${normalized}.`);
     };
 
+    window.togglePropertyRentable = async function() {
+        if (!currentProfileData || Number(currentProfileData?.casa_detinuta || 0) <= 0) {
+            setStatusLine("property-rent-status", false, "Nu ai o casa detinuta pe cont.");
+            return;
+        }
+
+        const data = await panelApi("property_control", { propertyAction: "toggle_rentable" });
+        if (!data.ok) {
+            setStatusLine("property-rent-status", false, data.msg || "Nu am putut schimba statusul chiriei.");
+            return;
+        }
+
+        currentProfileData = {
+            ...currentProfileData,
+            casa_detinuta_chirie_activata: !!data.rentable,
+        };
+        renderProfileOverview(currentProfileData);
+        renderPropertiesPage(currentProfileData);
+        renderNotificationsPage();
+        setStatusLine("property-rent-status", true, data.msg || "Status chirie actualizat.");
+    };
+
+    window.setPropertyRentPrice = async function() {
+        if (!currentProfileData || Number(currentProfileData?.casa_detinuta || 0) <= 0) {
+            setStatusLine("property-rent-status", false, "Nu ai o casa detinuta pe cont.");
+            return;
+        }
+
+        const currentPrice = Number(currentProfileData?.casa_detinuta_pret_chirie || 0);
+        const raw = prompt("Pret nou pentru chirie:", String(currentPrice));
+        if (raw == null) return;
+        const price = Math.max(0, Number(String(raw).replace(/[^\d]/g, '') || 0));
+
+        const data = await panelApi("property_control", { propertyAction: "set_rent_price", price });
+        if (!data.ok) {
+            setStatusLine("property-rent-status", false, data.msg || "Nu am putut seta pretul chiriei.");
+            return;
+        }
+
+        currentProfileData = {
+            ...currentProfileData,
+            casa_detinuta_pret_chirie: price,
+        };
+        renderProfileOverview(currentProfileData);
+        renderPropertiesPage(currentProfileData);
+        renderNotificationsPage();
+        setStatusLine("property-rent-status", true, data.msg || `Pret chirie setat la $${price}.`);
+    };
+
+    window.evictAllTenants = async function() {
+        if (!currentProfileData || Number(currentProfileData?.casa_detinuta || 0) <= 0) {
+            setStatusLine("property-rent-status", false, "Nu ai o casa detinuta pe cont.");
+            return;
+        }
+        if (!confirm("Evacuezi toti chiriasii din casa?")) {
+            return;
+        }
+
+        const data = await panelApi("property_control", { propertyAction: "evict_all" });
+        if (!data.ok) {
+            setStatusLine("property-rent-status", false, data.msg || "Nu am putut evacua chiriasii.");
+            return;
+        }
+
+        currentProfileData = {
+            ...currentProfileData,
+            casa_detinuta_chiriasi: 0,
+            casa_detinuta_nume_chiriasi: [],
+        };
+        renderProfileOverview(currentProfileData);
+        renderPropertiesPage(currentProfileData);
+        renderNotificationsPage();
+        setStatusLine("property-rent-status", true, data.msg || "Chiriasii au fost evacuati.");
+    };
+
     // ---- REPORTS ----
     window.sendReport = async function() {
         const target = document.getElementById('rep-target').value.trim();
         const reason = document.getElementById('rep-reason').value.trim();
         const desc = document.getElementById('rep-desc').value.trim();
         const st = document.getElementById('rep-status');
-        if (!target || !reason || !desc) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
+        if (!target || !reason || !desc) { Toast.fire({ icon: 'warning', title: 'CompleteazÄƒ toate cÃ¢mpurile!' }); return; }
         try {
             await push(ref(db, 'reports'), {
                 from: currentRobloxName, target, reason, desc,
                 ts: Date.now(), status: 'pending'
             });
             st.style.display = 'block';
-            st.innerHTML = '<span style="color:#00ff88;font-weight:700">✅ Reclamația a fost trimisă! Un admin o va verifica curând.</span>';
+            st.innerHTML = '<span style="color:#00ff88;font-weight:700">âœ… ReclamaÈ›ia a fost trimisÄƒ! Un admin o va verifica curÃ¢nd.</span>';
             document.getElementById('rep-target').value = '';
             document.getElementById('rep-reason').value = '';
             document.getElementById('rep-desc').value = '';
         } catch(e) {
             st.style.display = 'block';
-            st.innerHTML = '<span style="color:#f87171">❌ Eroare: ' + e.message + '</span>';
+            st.innerHTML = '<span style="color:#f87171">âŒ Eroare: ' + e.message + '</span>';
         }
     }
 
@@ -2119,7 +2388,7 @@
     window.loginUser = async () => {
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-pass').value;
-        if(!email || !pass) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
+        if(!email || !pass) { Toast.fire({ icon: 'warning', title: 'CompleteazÄƒ toate cÃ¢mpurile!' }); return; }
         try {
             await signInWithEmailAndPassword(auth, email, pass);
         } catch(e) {
@@ -2131,17 +2400,17 @@
         const robloxName = document.getElementById('reg-roblox').value.trim();
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
-        if(!robloxName || !email || !pass) { Toast.fire({ icon: 'warning', title: 'Completează toate câmpurile!' }); return; }
+        if(!robloxName || !email || !pass) { Toast.fire({ icon: 'warning', title: 'CompleteazÄƒ toate cÃ¢mpurile!' }); return; }
         if(!allUsers[robloxName]) {
-            Swal.fire({ icon: 'warning', title: 'Jucător Negăsit', text: `Nu există niciun jucător cu numele "${robloxName}" în Firebase. Joacă mai întâi pe server!` });
+            Swal.fire({ icon: 'warning', title: 'JucÄƒtor NegÄƒsit', text: `Nu existÄƒ niciun jucÄƒtor cu numele "${robloxName}" Ã®n Firebase. JoacÄƒ mai Ã®ntÃ¢i pe server!` });
             return;
         }
         try {
             const uc = await createUserWithEmailAndPassword(auth, email, pass);
             await set(ref(db, 'site_users/' + uc.user.uid), { robloxUsername: robloxName, email, verified: false });
-            Toast.fire({ icon: 'success', title: 'Cont creat! Verifică-ți Roblox-ul.' });
+            Toast.fire({ icon: 'success', title: 'Cont creat! VerificÄƒ-È›i Roblox-ul.' });
         } catch(e) {
-            Swal.fire({ icon: 'error', title: 'Eroare Înregistrare', text: e.message });
+            Swal.fire({ icon: 'error', title: 'Eroare ÃŽnregistrare', text: e.message });
         }
     }
 
@@ -2175,7 +2444,7 @@
     }
     updateApplyCounter();
 
-    // Secret admin shortcut — scrie 'admin' rapid pe tastatură
+    // Secret admin shortcut â€” scrie 'admin' rapid pe tastaturÄƒ
     let secretBuf = '';
     document.addEventListener('keydown', e => {
         secretBuf += e.key.toLowerCase();
@@ -2185,4 +2454,7 @@
 </script>
 </body>
 </html>
+
+
+
 

@@ -880,6 +880,94 @@ def _handle_set_spawn_preference(identity: dict, users: dict, body: dict):
     }
 
 
+def _handle_property_control(identity: dict, users: dict, body: dict):
+    username = identity["username"]
+    auth_token = identity.get("id_token", "")
+    profile = _as_dict(users.get(username))
+    if not profile:
+        return {"ok": False, "msg": "Profil user lipsa."}
+
+    owned_house = parse_int(profile.get("casa_detinuta", 0), 0)
+    if owned_house <= 0:
+        return {"ok": False, "msg": "Nu ai o casa detinuta pe cont."}
+
+    action = str(body.get("propertyAction", "")).strip().lower()
+    if action not in ("toggle_rentable", "set_rent_price", "evict_all"):
+        return {"ok": False, "msg": "Actiune proprietate invalida."}
+
+    current_rentable = _as_bool(profile.get("casa_detinuta_chirie_activata"), False)
+    current_price = parse_int(profile.get("casa_detinuta_pret_chirie", 0), 0)
+    current_tenants = parse_int(profile.get("casa_detinuta_chiriasi", 0), 0)
+
+    patch = {}
+    if action == "toggle_rentable":
+        next_state = not current_rentable
+        ok_sync, sync_note = _send_roblox_command(
+            username,
+            "SetHouseRentable",
+            username,
+            "true" if next_state else "false",
+            "Panel Properties",
+        )
+        if not ok_sync:
+            return {"ok": False, "msg": sync_note}
+        patch["casa_detinuta_chirie_activata"] = next_state
+        ok_user, _, err_user = _firebase_patch(f"users/{_safe_path(username)}", patch, auth_token=auth_token)
+        if not ok_user:
+            return {"ok": False, "msg": err_user}
+        return {
+            "ok": True,
+            "msg": "Chiria a fost activata." if next_state else "Chiria a fost dezactivata.",
+            "rentable": next_state,
+            "sync_note": sync_note,
+        }
+
+    if action == "set_rent_price":
+        price = parse_int(body.get("price", 0), 0)
+        if price < 0:
+            return {"ok": False, "msg": "Pretul chiriei nu poate fi negativ."}
+        ok_sync, sync_note = _send_roblox_command(
+            username,
+            "SetHouseRentPrice",
+            username,
+            str(price),
+            "Panel Properties",
+        )
+        if not ok_sync:
+            return {"ok": False, "msg": sync_note}
+        patch["casa_detinuta_pret_chirie"] = price
+        ok_user, _, err_user = _firebase_patch(f"users/{_safe_path(username)}", patch, auth_token=auth_token)
+        if not ok_user:
+            return {"ok": False, "msg": err_user}
+        return {
+            "ok": True,
+            "msg": f"Pretul chiriei a fost setat la ${price}.",
+            "price": price,
+            "sync_note": sync_note,
+        }
+
+    ok_sync, sync_note = _send_roblox_command(
+        username,
+        "EvictAllTenants",
+        username,
+        "",
+        "Panel Properties",
+    )
+    if not ok_sync:
+        return {"ok": False, "msg": sync_note}
+    patch["casa_detinuta_chiriasi"] = 0
+    patch["casa_detinuta_nume_chiriasi"] = []
+    ok_user, _, err_user = _firebase_patch(f"users/{_safe_path(username)}", patch, auth_token=auth_token)
+    if not ok_user:
+        return {"ok": False, "msg": err_user}
+    return {
+        "ok": True,
+        "msg": f"Au fost evacuati {current_tenants} chiriasi.",
+        "tenants": 0,
+        "sync_note": sync_note,
+    }
+
+
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         send_json(self, 200, {"ok": True})
@@ -946,6 +1034,11 @@ class handler(BaseHTTPRequestHandler):
 
         if action == "set_spawn_preference":
             payload = _handle_set_spawn_preference(identity, users, body)
+            send_json(self, 200 if payload.get("ok") else 400, payload)
+            return
+
+        if action == "property_control":
+            payload = _handle_property_control(identity, users, body)
             send_json(self, 200 if payload.get("ok") else 400, payload)
             return
 
