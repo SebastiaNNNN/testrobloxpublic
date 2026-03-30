@@ -171,6 +171,23 @@
 
         /* ---- CONTENT ---- */
         .content { flex: 1; padding: 32px; overflow-y: auto; min-height: 100vh; }
+        .page-breadcrumbs {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            margin-bottom: 18px; color: #64748b; font-size: 12px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .crumb-link, .crumb-current {
+            display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px;
+        }
+        .crumb-link {
+            border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
+            color: #94a3b8; cursor: pointer; transition: all 0.15s;
+        }
+        .crumb-link:hover { border-color: rgba(0,255,136,0.22); color: #00ff88; }
+        .crumb-current {
+            border: 1px solid rgba(0,255,136,0.16); background: rgba(0,255,136,0.08); color: #e2e8f0;
+        }
+        .crumb-sep { color: #334155; font-size: 11px; }
 
         /* ---- PAGE SECTIONS ---- */
         .page { display: none; animation: fadeUp 0.3s ease; }
@@ -459,6 +476,7 @@
             .sidebar-nav { flex-direction: row; flex-wrap: wrap; }
             .sidebar-bottom { width: 100%; padding-top: 8px; border: none; }
             .content { padding: 16px; }
+            .page-breadcrumbs { margin-bottom: 14px; gap: 6px; }
             .stat-grid { grid-template-columns: 1fr 1fr; }
             .split-2 { grid-template-columns: 1fr; }
             .garage-specs { grid-template-columns: 1fr; }
@@ -575,6 +593,7 @@
 
     <!-- CONTENT -->
     <main class="content">
+        <div class="page-breadcrumbs" id="page-breadcrumbs"></div>
 
         <!-- DASHBOARD -->
         <div class="page active" id="page-dash">
@@ -1034,6 +1053,7 @@
     let factionHubInterval = null;
     let currentProfileData = null;
     let selectedGarageCarIndex = 0;
+    let currentRouteState = { page: "dash", playerName: "", factionName: "" };
 
     const SHOP_ITEMS = [
         { id: "cash_10k", name: "$10,000 Cash", cost: 10, desc: "Boost rapid pentru inceput.", kind: "cash", amount: 10000 },
@@ -1078,47 +1098,195 @@
         return PAGE_ROUTES[raw] ? raw : "dash";
     }
 
-    function pathForPage(page) {
-        return PAGE_ROUTES[normalizePanelPage(page)] || "/dashboard";
+    function normalizeRouteText(value) {
+        return String(value || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+    }
+
+    function decodeRouteSegment(value) {
+        try {
+            return decodeURIComponent(String(value || "").replace(/\+/g, "%20"));
+        } catch (_) {
+            return String(value || "");
+        }
+    }
+
+    function getRouteDetail(page, detail = {}) {
+        const normalizedPage = normalizePanelPage(page);
+        return {
+            playerName: normalizedPage === "players" ? String(detail.playerName || "").trim() : "",
+            factionName: normalizedPage === "factions" ? String(detail.factionName || "").trim() : "",
+        };
+    }
+
+    function pathForPage(page, detail = {}) {
+        const normalizedPage = normalizePanelPage(page);
+        const basePath = PAGE_ROUTES[normalizedPage] || "/dashboard";
+        const routeDetail = getRouteDetail(normalizedPage, detail);
+        if (normalizedPage === "players" && routeDetail.playerName) {
+            return `${basePath}/${normalizeRouteText(routeDetail.playerName)}`;
+        }
+        if (normalizedPage === "factions" && routeDetail.factionName) {
+            return `${basePath}/${normalizeRouteText(routeDetail.factionName)}`;
+        }
+        return basePath;
     }
 
     function pageFromLocation() {
         const path = String(window.location.pathname || "/").replace(/\/+$/, "") || "/";
-        if (path === "/") return "dash";
-        return ROUTE_TO_PAGE[path] || "dash";
+        if (path === "/") return { page: "dash", playerName: "", factionName: "" };
+        const segments = path.split("/").filter(Boolean);
+        const basePath = segments.length ? `/${segments[0]}` : "/";
+        const page = ROUTE_TO_PAGE[basePath] || "dash";
+        const detailSegment = segments.slice(1).join("/");
+        return {
+            page,
+            playerName: page === "players" && detailSegment ? decodeRouteSegment(detailSegment) : "",
+            factionName: page === "factions" && detailSegment ? decodeRouteSegment(detailSegment) : "",
+        };
     }
 
-    function updatePageMeta(page) {
+    function resolvePlayerName(candidate) {
+        const raw = String(candidate || "").trim();
+        if (!raw) return "";
+        const direct = Object.keys(allUsers || {}).find((name) => String(name).toLowerCase() === raw.toLowerCase());
+        if (direct) return direct;
+        const slug = normalizeRouteText(raw);
+        return Object.keys(allUsers || {}).find((name) => normalizeRouteText(name) === slug) || "";
+    }
+
+    function resolveFactionName(candidate) {
+        const raw = String(candidate || "").trim();
+        if (!raw) return "";
+        const configNames = Array.isArray(hubSnapshot?.game_factions)
+            ? hubSnapshot.game_factions.map((row) => String(row?.name || "")).filter(Boolean)
+            : [];
+        const userFactionNames = Array.from(new Set(Object.values(allUsers || {})
+            .map((data) => String(data?.factiune || ""))
+            .filter((name) => name && name !== "Civil")));
+        const pool = [...new Set([...configNames, ...userFactionNames])];
+        const direct = pool.find((name) => String(name).toLowerCase() === raw.toLowerCase());
+        if (direct) return direct;
+        const slug = normalizeRouteText(raw);
+        return pool.find((name) => normalizeRouteText(name) === slug) || "";
+    }
+
+    function renderBreadcrumbs(page, detail = {}) {
+        const root = document.getElementById("page-breadcrumbs");
+        if (!root) return;
+        const normalizedPage = normalizePanelPage(page);
+        const routeDetail = getRouteDetail(normalizedPage, detail);
+        const crumbs = [{ label: "Panel", page: "dash", current: false }];
+        if (normalizedPage !== "dash") {
+            crumbs.push({
+                label: PAGE_TITLES[normalizedPage] || "Panel",
+                page: normalizedPage,
+                current: !routeDetail.playerName && !routeDetail.factionName,
+            });
+        } else {
+            crumbs.push({ label: PAGE_TITLES.dash, current: true });
+        }
+        if (normalizedPage === "players" && routeDetail.playerName) {
+            crumbs.push({ label: routeDetail.playerName, current: true });
+        }
+        if (normalizedPage === "factions" && routeDetail.factionName) {
+            crumbs.push({ label: routeDetail.factionName, current: true });
+        }
+        root.innerHTML = crumbs.map((crumb) => {
+            if (crumb.current) {
+                return `<span class="crumb-current">${safeHtml(crumb.label)}</span>`;
+            }
+            return `<button class="crumb-link" onclick="goPage('${crumb.page}')">${safeHtml(crumb.label)}</button>`;
+        }).join('<span class="crumb-sep"><i class="fas fa-angle-right"></i></span>');
+    }
+
+    function updateRouteState(page, detail = {}, options = {}) {
+        const normalizedPage = normalizePanelPage(page);
+        const routeDetail = getRouteDetail(normalizedPage, detail);
+        const targetPath = pathForPage(normalizedPage, routeDetail);
+        const useHistory = options?.history !== false;
+        const replaceHistory = !!options?.replace;
+        currentRouteState = { page: normalizedPage, ...routeDetail };
+        if (useHistory && window.location.pathname !== targetPath) {
+            const method = replaceHistory ? "replaceState" : "pushState";
+            window.history[method](currentRouteState, "", targetPath);
+        } else if (replaceHistory) {
+            window.history.replaceState(currentRouteState, "", targetPath);
+        }
+        updatePageMeta(normalizedPage, routeDetail);
+        renderBreadcrumbs(normalizedPage, routeDetail);
+    }
+
+    function updatePageMeta(page, detail = {}) {
         const label = PAGE_TITLES[page] || "Panel";
-        document.title = `SEVID RP - ${label}`;
+        const suffix = detail.playerName || detail.factionName || "";
+        const fullLabel = suffix ? `${label} / ${suffix}` : label;
+        document.title = `SEVID RP - ${fullLabel}`;
+    }
+
+    function clearPlayerRouteDetail() {
+        const detail = document.getElementById("player-detail");
+        if (detail) detail.style.display = "none";
+    }
+
+    function clearFactionRouteDetail() {
+        const detail = document.getElementById("faction-detail");
+        if (detail) detail.style.display = "none";
+    }
+
+    function applyPageRouteDetail(page) {
+        const normalizedPage = normalizePanelPage(page);
+        if (normalizedPage === "players") {
+            if (!currentRouteState.playerName) {
+                clearPlayerRouteDetail();
+                return;
+            }
+            const resolved = resolvePlayerName(currentRouteState.playerName);
+            if (!resolved) {
+                clearPlayerRouteDetail();
+                updateRouteState("players", {}, { history: true, replace: true });
+                return;
+            }
+            window.showPlayerDetail(resolved, { history: false, scroll: false });
+            return;
+        }
+        if (normalizedPage === "factions") {
+            if (!currentRouteState.factionName) {
+                clearFactionRouteDetail();
+                return;
+            }
+            const resolved = resolveFactionName(currentRouteState.factionName);
+            if (!resolved) {
+                clearFactionRouteDetail();
+                updateRouteState("factions", {}, { history: true, replace: true });
+                return;
+            }
+            window.showFactionMembers(resolved, { history: false, scroll: false });
+        }
     }
 
     window.goPage = function(page, options = {}) {
         const normalizedPage = normalizePanelPage(page);
-        const targetPath = pathForPage(normalizedPage);
-        const useHistory = options?.history !== false;
-        const replaceHistory = !!options?.replace;
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('page-' + normalizedPage).classList.add('active');
         document.querySelector(`[data-page="${normalizedPage}"]`).classList.add('active');
-        if (useHistory && window.location.pathname !== targetPath) {
-            const method = replaceHistory ? "replaceState" : "pushState";
-            window.history[method]({ page: normalizedPage }, "", targetPath);
-        } else if (replaceHistory) {
-            window.history.replaceState({ page: normalizedPage }, "", targetPath);
-        }
-        updatePageMeta(normalizedPage);
+        updateRouteState(normalizedPage, options, options);
         if (factionHubInterval) {
             clearInterval(factionHubInterval);
             factionHubInterval = null;
         }
         if(normalizedPage === 'factions') {
             loadFactions();
-            refreshFactionHub();
+            refreshFactionHub().then(() => applyPageRouteDetail(normalizedPage));
             factionHubInterval = setInterval(() => {
                 refreshFactionHub();
             }, 15000);
+            return;
         }
         if(normalizedPage === 'ppshop') {
             refreshPPShop();
@@ -1134,11 +1302,13 @@
             refreshFactionHub();
             refreshPPShop();
         }
+        applyPageRouteDetail(normalizedPage);
     }
 
     window.addEventListener('popstate', () => {
         if (!currentUser) return;
-        window.goPage(pageFromLocation(), { history: false });
+        const route = pageFromLocation();
+        window.goPage(route.page, { ...route, history: false });
     });
 
     window.showCard = function(id) {
@@ -1177,7 +1347,8 @@
                 renderShopItems();
                 await refreshFactionHub();
                 await refreshPPShop();
-                window.goPage(pageFromLocation(), { history: false, replace: true });
+                const route = pageFromLocation();
+                window.goPage(route.page, { ...route, history: false, replace: true });
             }
         } else {
             loading.style.display = 'none';
@@ -1863,13 +2034,14 @@
         const body = document.getElementById('players-body');
         const detail = document.getElementById('player-detail');
         detail.style.display = 'none';
+        updateRouteState('players', {}, { history: true, replace: true });
         if (!q) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Scrie un nume pentru a căuta.</td></tr>'; return; }
         const results = Object.entries(allUsers)
             .filter(([name, d]) => name.toLowerCase().includes(q) || (d.nume_rp||'').toLowerCase().includes(q))
             .slice(0, 30);
         if (!results.length) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Niciun jucător găsit.</td></tr>'; return; }
         body.innerHTML = results.map(([name, d]) => `
-            <tr class="clickable-row" onclick="showPlayerDetail('${name}')">
+            <tr class="clickable-row" onclick="showPlayerDetail(decodeURIComponent('${encodeURIComponent(name)}'))">
                 <td><strong>${name}</strong>${d.nume_rp&&d.nume_rp!==name?' <span style="color:#64748b;font-size:11px;">(${d.nume_rp})</span>':''}</td>
                 <td><span class="badge badge-blue">${d.factiune||'Civil'}</span></td>
                 <td>${d.rank||0}</td>
@@ -1878,13 +2050,15 @@
             </tr>`).join('');
     }
 
-    window.showPlayerDetail = function(name) {
-        const d = allUsers[name];
-        if (!d) return;
+    window.showPlayerDetail = function(name, options = {}) {
+        const resolvedName = resolvePlayerName(name);
+        const d = allUsers[resolvedName];
+        if (!d) return false;
         document.getElementById('player-detail').style.display = 'block';
-        document.getElementById('pd-name').innerText = name;
+        document.getElementById('players-q').value = resolvedName;
+        document.getElementById('pd-name').innerText = resolvedName;
         document.getElementById('pd-avatar').src = d.avatar_url || '';
-        document.getElementById('pd-rp-name').innerText = d.nume_rp || name;
+        document.getElementById('pd-rp-name').innerText = d.nume_rp || resolvedName;
         document.getElementById('pd-faction').innerText = d.factiune || 'Civil';
         document.getElementById('pd-rank').innerText = 'Rank ' + (d.rank||0);
         const pdAdm = parseInt(d.admin||0);
@@ -1898,7 +2072,11 @@
         const cars = Array.isArray(d.masini) ? d.masini : [];
         document.getElementById('pd-cars').innerText = cars.length;
         document.getElementById('pd-seen').innerText = d.last_online || '—';
-        document.getElementById('player-detail').scrollIntoView({ behavior: 'smooth' });
+        updateRouteState('players', { playerName: resolvedName }, options);
+        if (options.scroll !== false) {
+            document.getElementById('player-detail').scrollIntoView({ behavior: 'smooth' });
+        }
+        return true;
     }
 
     // ---- FACTIONS ----
@@ -1932,7 +2110,7 @@
                     : `<span class="badge badge-red">CLOSED</span>`;
 
                 return `
-                    <div class="faction-card-item" onclick="showFactionMembers('${name.replace(/'/g, "\\'")}')">
+                    <div class="faction-card-item" onclick="showFactionMembers(decodeURIComponent('${encodeURIComponent(name)}'))">
                         <div class="fname">${safeHtml(name)}</div>
                         <div class="fcount"><span>${cnt}${maxText}</span> membri</div>
                         <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
@@ -1947,21 +2125,25 @@
 
         const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
         container.innerHTML = sorted.length ? sorted.map(([name, cnt]) => `
-            <div class="faction-card-item" onclick="showFactionMembers('${name.replace(/'/g, "\\'")}')">
+            <div class="faction-card-item" onclick="showFactionMembers(decodeURIComponent('${encodeURIComponent(name)}'))">
                 <div class="fname">${name}</div>
                 <div class="fcount"><span>${cnt}</span> membri</div>
             </div>`).join("") : "<div class='empty-msg'>Nu exista factiuni active.</div>";
     }
 
-    window.showFactionMembers = function(faction) {
+    window.showFactionMembers = function(faction, options = {}) {
+        const resolvedFaction = resolveFactionName(faction) || String(faction || "");
         allFactionMembers = Object.entries(allUsers)
-            .filter(([, d]) => (d.factiune||'Civil') === faction)
+            .filter(([, d]) => (d.factiune||'Civil') === resolvedFaction)
             .sort((a,b) => (b[1].rank||0)-(a[1].rank||0) || (b[1].level||0)-(a[1].level||0));
-        document.getElementById('fd-name').innerText = faction;
+        document.getElementById('fd-name').innerText = resolvedFaction;
         document.getElementById('faction-detail').style.display = 'block';
-        renderFactionPublicSettings(faction, "faction-public-settings", "browse");
+        updateRouteState('factions', { factionName: resolvedFaction }, options);
+        renderFactionPublicSettings(resolvedFaction, "faction-public-settings", "browse");
         renderFactionMembers(allFactionMembers);
-        document.getElementById('faction-detail').scrollIntoView({ behavior: 'smooth' });
+        if (options.scroll !== false) {
+            document.getElementById('faction-detail').scrollIntoView({ behavior: 'smooth' });
+        }
     }
 
     function renderFactionMembers(list) {
